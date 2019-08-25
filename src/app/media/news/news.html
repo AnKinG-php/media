@@ -1,0 +1,147 @@
+<ion-header>
+  <ion-toolbar color="secondary">
+    <ion-buttons>
+      <ion-row>
+        <ion-col class="active">
+          <ion-button>
+            <ion-icon slot="icon-only" name="headset"></ion-icon>
+          </ion-button>
+        </ion-col>
+        <ion-col>
+          <ion-button>
+            <ion-icon slot="icon-only" name="bookmarks"></ion-icon>
+          </ion-button>
+        </ion-col>
+        <ion-col>
+          <ion-button>
+            <ion-icon slot="icon-only" name="mail"></ion-icon>
+          </ion-button>
+        </ion-col>
+        <ion-col>
+          <ion-button>
+            <ion-icon slot="icon-only" name="text"></ion-icon>
+          </ion-button>
+        </ion-col>
+        <ion-col>
+          <ion-button>
+            <ion-icon slot="icon-only" name="person"></ion-icon>
+          </ion-button>
+        </ion-col>
+      </ion-row>
+    </ion-buttons>
+
+  </ion-toolbar>
+
+
+</ion-header>
+
+<ion-content class="background">
+
+  <h1 class="title">Музыка</h1>
+
+  <ion-slides [options]="slideOpts" *ngIf="slideShow" [@FadeIn]>
+    <ion-slide *ngFor="let item of albums" [routerLink]="['/media/news/album/'+item.id]" routerDirection="forward">
+      <img [src]="item.imgSrc" alt="">
+      <h4 class="mt-5">{{ item.author }}<br /><small>{{ item.title }}</small></h4>
+    </ion-slide>
+  </ion-slides>
+
+
+  <ion-list class="mb-0">
+    <ion-list-header  class="mb-0" [routerLink]="['/media/news/list/recommend/']" routerDirection="forward">
+      <h4 class="strong" >Рекомендуем вам</h4>
+      <h3>
+        <ion-icon name="arrow-forward"></ion-icon>
+      </h3>
+    </ion-list-header>
+<!--
+      <h6 class="text-center" *ngIf="advise && advise.length==0"><small>Пусто</small></h6> -->
+
+    <ion-item lines="none" (click)="release(item, advise)" *ngFor="let item of advise">
+      <ion-thumbnail slot="start">
+        <img [src]="item.imgSrc" [alt]="item.title">
+      </ion-thumbnail>
+      <ion-label>
+        <h2>{{ item.author }}</h2>
+        <h3 class="text-muted">{{ item.title }}</h3>
+      </ion-label>
+      <p class="track-time text-muted">{{ item.time }}</p>
+      <ion-icon name="more" (click)="presentActionSheet(item)"></ion-icon>
+    </ion-item>
+
+  </ion-list>
+
+  <ion-list class="mb-0">
+    <ion-list-header  class="mb-0" [routerLink]="['/media/news/list/news/']" routerDirection="forward">
+      <h4 class="strong">Новинки</h4>
+      <h3>
+        <ion-icon name="arrow-forward"></ion-icon>
+      </h3>
+    </ion-list-header>
+
+          <!-- <h6 class="text-center" *ngIf="news && news.length==0"><small>Пусто</small></h6> -->
+
+    <ion-item lines="none" (click)="release(item, news)" *ngFor="let item of news">
+      <ion-thumbnail slot="start">
+        <img [src]="item.imgSrc" [alt]="item.title">
+      </ion-thumbnail>
+      <ion-label>
+        <h2>{{ item.author }}</h2>
+        <h3 class="text-muted">{{ item.title }}</h3>
+      </ion-label>
+      <p class="track-time text-muted">{{ item.time }}</p>
+      <ion-icon name="more" (click)="presentActionSheet(item)"></ion-icon>
+    </ion-item>
+
+  </ion-list>
+
+
+  <ion-list>
+    <ion-list-header  class="mb-0" [routerLink]="['/media/news/list/popular/']" routerDirection="forward">
+      <h4 class="strong" >Популярное</h4>
+      <h3>
+        <ion-icon name="arrow-forward"></ion-icon>
+      </h3>
+    </ion-list-header>
+
+          <!-- <h6 class="text-center" *ngIf="popular && popular.length==0"><small>Пусто</small></h6> -->
+
+    <ion-item lines="none" (click)="release(item, popular)" *ngFor="let item of popular">
+      <ion-thumbnail slot="start">
+        <img [src]="item.imgSrc" [alt]="item.title">
+      </ion-thumbnail>
+      <ion-label>
+        <h2>{{ item.author }}</h2>
+        <h3 class="text-muted">{{ item.title }}</h3>
+      </ion-label>
+      <p class="track-time text-muted">{{ item.time }}</p>
+      <ion-icon name="more" (click)="presentActionSheet(item)"></ion-icon>
+    </ion-item>
+
+  </ion-list>
+
+  <br *ngIf="trackData['status']">
+  <br *ngIf="trackData['status']">
+
+
+  <div class="footer-media-info" *ngIf="trackData['status']">
+    <div class="track-duration" [style.width]="(trackData['position'] / this.trackData['duration'] * 100)+'%'"></div>
+    <ion-grid>
+      <ion-row>
+        <ion-col class="icon" size="3" (click)="openModal([{id: 0}])">
+          <ion-icon name="arrow-dropup"></ion-icon>
+        </ion-col>
+        <ion-col class="text-center" (click)="openModal([{id: 0}])">
+          <small *ngFor="let data of trackData['data']">
+           {{ data.author }}<br />
+            <small>{{ data.title }}</small></small>
+        </ion-col>
+        <ion-col class="text-right icon" size="3" >
+          <ion-spinner name="crescent" color="secondary" *ngIf="trackData['status']<=1"></ion-spinner>
+          <ion-icon name="pause" *ngIf="trackData['status']==2" (click)="pause()"></ion-icon>
+          <ion-icon name="play" *ngIf="trackData['status']>2" (click)="play()"></ion-icon>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </div>
+</ion-content>

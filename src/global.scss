@@ -1,0 +1,257 @@
+// http://ionicframework.com/docs/theming/
+@import url('https://fonts.googleapis.com/css?family=PT+Sans');
+@import '~@ionic/angular/css/core.css';
+@import '~@ionic/angular/css/normalize.css';
+@import '~@ionic/angular/css/structure.css';
+@import '~@ionic/angular/css/typography.css';
+@import '~@ionic/angular/css/padding.css';
+@import '~@ionic/angular/css/float-elements.css';
+@import '~@ionic/angular/css/text-alignment.css';
+@import '~@ionic/angular/css/text-transformation.css';
+@import '~@ionic/angular/css/flex-utils.css';
+
+body,
+html {
+  font-family: 'PT Sans', sans-serif !important;
+  font-size: 16px !important;
+  height: 100%;
+  background: #4E8483;
+  //background-image: url('assets/background.png');
+}
+
+:focus,
+:hover,
+body:active {
+  outline: none !important;
+  outline-offset: none !important;
+}
+
+.title {
+  margin-left: 15px;
+  font-weight: bold;
+}
+.title ion-icon{
+    margin-top: 5px;
+  }
+
+  .flex {
+    display: flex;
+  }
+
+ion-toolbar ion-buttons ion-row {
+  width: 100%;
+}
+
+ion-toolbar ion-buttons ion-row ion-col {
+  padding: 0px;
+  text-align: center;
+}
+ion-toolbar ion-buttons {
+  padding: 5px 0;
+}
+
+ion-toolbar ion-buttons ion-row ion-col ion-button{
+  opacity: 0.5;
+}
+
+ion-toolbar ion-buttons ion-row ion-col.active ion-button{
+  padding: 0px 0px 10px 0px;
+  opacity: 1;
+  border-bottom: 3px solid #FFC90B;
+  margin-bottom: -11px;
+}
+
+ion-content {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+ion-slide img {
+  border-radius: 20px;
+}
+
+
+.content-media-list {
+  margin: 0px;
+  border-radius: 20px;
+  background: #fff;
+  height: 570px;
+}
+
+.title-ios {
+  padding-left: 55px !important;
+  width: 95%;
+  text-align: left !important;
+}
+
+.title-ios.solo{
+  padding-left: 15px !important;
+}
+
+.searchbar-cancel-button.sc-ion-searchbar-ios {
+  color: #111;
+}
+
+.strong {
+  font-weight: bold;
+}
+
+.background {
+  background: #fff;
+  //background-image: url('assets/background.png');
+}
+
+.text-muted {
+  opacity: 0.7;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-left {
+  text-align: left;
+}
+.small {
+  font-size: 11px;
+}
+.float-right {
+  float: right;
+}
+
+.m-10 {
+  margin: 10px;
+}
+.mt-0 {
+  margin-top: 0;
+}
+.mt-5 {
+  margin-top: 5px;
+}
+.mb-0 {
+  margin-bottom: 0 !important;
+}
+.p-10 {
+  padding: 10px;
+}
+.p-15 {
+  padding: 15px;
+}
+.pt-0 {
+  padding-top: 0px;
+}
+.mb-10 {
+  margin-bottom: 10px;
+}
+.pb-10 {
+  padding-bottom: 10px;
+}
+.m-0 {
+  margin: 0;
+}
+.p-0 {
+  padding: 0;
+}
+.ml-5 {
+  margin-left: 5px;
+}
+.pl-0 {
+  padding-left: 0;
+}
+.pl-5 {
+  padding-left: 5px;
+}
+.pr-0 {
+  padding-right: 0;
+}
+.mr-0 {
+  margin-right: 0;
+}
+.mr-8 {
+  margin-right: 8px;
+}
+.ml-0 {
+  margin-left: 0;
+}
+.mt-3 {
+  margin-top: 3px;
+}
+.mr-20{
+  margin-right: 20px;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+ion-chip {
+  width: 100%;
+}
+ion-chip ion-label {
+  width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+ion-card-subtitle > ion-icon {
+  font-size: 18px;
+  vertical-align: sub;
+  margin-right: 5px;
+}
+
+.app-loading {
+  background: #008081;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.app-loading .spinner {
+  height: 200px;
+  width: 200px;
+  animation: rotate 2s linear infinite;
+  transform-origin: center center;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+}
+
+.app-loading .spinner .path {
+  stroke-dasharray: 1, 200;
+  stroke-dashoffset: 0;
+  animation: dash 1.5s ease-in-out infinite;
+  stroke-linecap: round;
+  stroke: #fff;
+}
+@keyframes rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@keyframes dash {
+  0% {
+    stroke-dasharray: 1, 200;
+    stroke-dashoffset: 0;
+  }
+
+  50% {
+    stroke-dasharray: 89, 200;
+    stroke-dashoffset: -35px;
+  }
+
+  100% {
+    stroke-dasharray: 89, 200;
+    stroke-dashoffset: -124px;
+  }
+}

@@ -1,0 +1,19 @@
+<ion-app>
+  <ion-split-pane>
+    <!-- <ion-menu side="start" swipe-gesture="true" type="overlay">
+      <ion-content color="secondary">
+        <ion-list>
+          <ion-menu-toggle auto-hide="true" *ngFor="let p of appPages">
+            <ion-item class="p-2" lines="none" [routerLink]="[p.url]" [queryParams]="p.query" routerDirection="root">
+              <ion-icon slot="start" color="primary" [name]="p.icon"></ion-icon>
+              <ion-label>
+                {{ p.title }}
+              </ion-label>
+            </ion-item>
+          </ion-menu-toggle>
+        </ion-list>
+       </ion-content>
+    </ion-menu> -->
+    <ion-router-outlet main></ion-router-outlet>
+  </ion-split-pane>
+</ion-app>

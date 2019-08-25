@@ -1,0 +1,103 @@
+<ion-header>
+  <ion-toolbar color="secondary">
+<ion-buttons>
+    <ion-row>
+        <ion-col class="active">
+          <ion-button>
+            <ion-icon slot="icon-only" name="headset"></ion-icon>
+          </ion-button>
+        </ion-col>
+        <ion-col>
+          <ion-button>
+            <ion-icon slot="icon-only" name="bookmarks"></ion-icon>
+          </ion-button>
+        </ion-col>
+        <ion-col>
+          <ion-button>
+            <ion-icon slot="icon-only" name="mail"></ion-icon>
+          </ion-button>
+        </ion-col>
+        <ion-col>
+          <ion-button>
+            <ion-icon slot="icon-only" name="text"></ion-icon>
+          </ion-button>
+        </ion-col>
+        <ion-col>
+          <ion-button>
+            <ion-icon slot="icon-only" name="person"></ion-icon>
+          </ion-button>
+        </ion-col>
+      </ion-row>
+</ion-buttons>
+
+  </ion-toolbar>
+
+
+</ion-header>
+
+<ion-content class="background">
+
+  <h1 class="title">
+    <span class="flex"><ion-icon class="float-left mr-20" name="arrow-back" (click)="back();"></ion-icon> {{ name }}
+    </span>
+  </h1>
+
+  <ion-list>
+
+    <div class="serach-bar" *ngIf="myTracks && myTracks.length>0">
+      <ion-searchbar #searchbar [@FadeIn] placeholder="Поиск" clearIcon showCancelButton="always" cancelButtonText="Закрыть" (ionInput)="onSearch($event)" (ionCancel)="toggleSearchbar(false)" (keyup.enter)="toggleSearchbar(false)"></ion-searchbar>
+    </div>
+
+  <h6 class="text-center" *ngIf="myTracksList && myTracksList.length==0"><small>Пусто</small></h6>
+
+    <ion-virtual-scroll *ngIf="myTracksList && myTracksList.length>0" [items]="myTracksList">
+      <div style="height: 70px;" *virtualItem="let item;">
+
+          <ion-list>
+
+            <ion-item lines="none" (click)="release(item, myTracksList)">
+              <ion-thumbnail slot="start">
+                <img [src]="item.imgSrc" [alt]="item.author + ' - ' + item.title">
+              </ion-thumbnail>
+              <ion-label>
+                <h2>{{ item.author }}</h2>
+                <h3 class="text-muted">{{ item.title }}</h3>
+              </ion-label>
+              <p class="track-time text-muted">{{ item.time }}</p>
+              <ion-icon name="more" (click)="presentActionSheet(item)"></ion-icon>
+            </ion-item>
+
+
+          </ion-list>
+
+
+      </div>
+
+    </ion-virtual-scroll>
+  </ion-list>
+
+  <br *ngIf="trackData['status']">
+  <br *ngIf="trackData['status']">
+
+
+  <div class="footer-media-info" *ngIf="trackData['status']">
+    <div class="track-duration" [style.width]="(trackData['position'] / this.trackData['duration'] * 100)+'%'"></div>
+    <ion-grid>
+      <ion-row>
+        <ion-col class="icon" size="3" (click)="openModal([{id: 0}])">
+          <ion-icon name="arrow-dropup"></ion-icon>
+        </ion-col>
+        <ion-col class="text-center" (click)="openModal([{id: 0}])">
+          <small *ngFor="let data of trackData['data']">
+           {{ data.author }}<br />
+            <small>{{ data.title }}</small></small>
+        </ion-col>
+        <ion-col class="text-right icon" size="3" >
+          <ion-spinner name="crescent" color="secondary" *ngIf="trackData['status']<=1"></ion-spinner>
+          <ion-icon name="pause" *ngIf="trackData['status']==2" (click)="pause()"></ion-icon>
+          <ion-icon name="play" *ngIf="trackData['status']>2" (click)="play()"></ion-icon>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </div>
+</ion-content>

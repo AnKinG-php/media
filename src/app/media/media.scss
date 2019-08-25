@@ -1,0 +1,16 @@
+
+ion-tab-button {
+  border-radius: 10px;
+}
+
+ion-tab-button.active {
+  background: rgba(0,0,0, .1);
+}
+ion-label {
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+ion-tab-bar {
+  padding: 5px;
+}

@@ -1,0 +1,62 @@
+<ion-content fullscreen class="background-black">
+
+  <h5 class="title">
+
+    <ion-icon color="primary" class="float-right mr-20" name="more" (click)="presentActionSheet();"></ion-icon>
+    <span class="flex">
+      <ion-icon color="primary" class="float-left mr-20 dropdown" name="arrow-dropdown" (click)="closeModal()"></ion-icon> <span (click)="closeModal()">{{ title }}</span>
+    </span>
+  </h5>
+
+  <div class="title-img">
+    <img src="assets/Rectangle 4.png" style="width: 100%" />
+  </div>
+
+  <div class="track">
+    <small class="text-muted">{{ trackData['data'][0].author }}</small>
+    <h2 class="mt-0">{{ trackData['data'][0].title }}</h2>
+  </div>
+
+  <div class="range-options">
+
+    <ion-range [class.o-0]="trackData['status']<=1 || !trackData['duration'] || !trackData['position'] || trackData['duration']==trackData['position']" [(ngModel)]="trackData['position']" min="0" [max]="trackData['duration']" step="1" color="warning" (ngModelChange)="setPosition($event)">
+    </ion-range >
+    <div class="range-info" [class.o-0]="trackData['status']<=1 || !trackData['duration'] || !trackData['position'] || trackData['duration']==trackData['position']">
+      <small>{{ toHHMMSS(trackData['position']) }}</small>
+      <small class="float-right">{{ toHHMMSS(trackData['duration']) }}</small>
+    </div>
+  </div>
+
+  <div class="range-actions">
+
+    <table>
+      <tr>
+        <td>
+          <ion-icon name="sync" [color]="repeat == false ? null : 'secondary'" class="text-muted" (click)="repeat == false ? changeRepeat(true) : changeRepeat(false)"></ion-icon>
+        </td>
+        <td>
+          <ion-icon name="skip-backward" [class.o-03]="!showBack" class="text-muted" (click)="showBack ? back(): null"></ion-icon>
+        </td>
+        <td>
+          <ion-fab-button color="secondary" (click)="trackData['status']==2 ? pause(): play()">
+            <ion-spinner name="crescent" color="primary" *ngIf="trackData['status']<=1"></ion-spinner>
+            <ion-icon name="pause" *ngIf="trackData['status']==2" ></ion-icon>
+            <ion-icon name="play" *ngIf="trackData['status']>2"></ion-icon>
+          </ion-fab-button>
+        </td>
+        <td>
+          <ion-icon name="skip-forward" [class.o-03]="!showNext" (click)="showNext ? next(): null"></ion-icon>
+        </td>
+        <td>
+          <ion-icon name="shuffle" class="text-muted" (click)="shuffle()"></ion-icon>
+        </td>
+      </tr>
+    </table>
+
+
+  </div>
+
+
+
+
+</ion-content>

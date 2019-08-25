@@ -1,0 +1,16 @@
+ <ion-tabs>
+    <ion-tab-bar color="secondary">
+    <ion-tab-button [routerLink]="['/media/news']" routerDirection="root" routerLinkActive="active">
+      <ion-icon name="musical-notes" color="primary"></ion-icon>
+      <ion-label>Новинки</ion-label>
+    </ion-tab-button>
+    <ion-tab-button [routerLink]="['/media/favorites']" routerDirection="root" routerLinkActive="active">
+      <ion-icon name="heart-empty" color="primary"></ion-icon>
+      <ion-label>Избранные</ion-label>
+    </ion-tab-button>
+    <ion-tab-button [routerLink]="['/media/search']" routerDirection="root" routerLinkActive="active">
+      <ion-icon name="search" color="primary"></ion-icon>
+      <ion-label>Поиск</ion-label>
+    </ion-tab-button>
+  </ion-tab-bar>
+</ion-tabs>

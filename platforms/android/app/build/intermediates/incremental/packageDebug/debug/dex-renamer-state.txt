@@ -1,0 +1,4 @@
+#Tue Aug 13 18:09:46 VLAT 2019
+base.0=C\:\\Users\\anking\\3D Objects\\Ionic4\\OneClick\\media\\platforms\\android\\app\\build\\intermediates\\transforms\\dexMerger\\debug\\0
+path.0=classes.dex
+renamed.0=classes.dex
