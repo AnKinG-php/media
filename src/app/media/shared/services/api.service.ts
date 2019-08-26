@@ -15,14 +15,14 @@ export class ApiService {
     headers: new HttpHeaders({
       "Accept": "application/json",
       'Content-Type': 'application/json',
-      "Authorization": "Basic Y2xpZW50OlNpbXBsZVBhc3N3b3JkIyQl"
+      "Authorization": "Basic Y2xpZW50OlNpbXBsZVBhc3N3b3JkIyQl",
     })
   }
   httpOptionsQuery: any = {
     headers: new HttpHeaders({
       "Accept": "application/json",
       'Content-Type': 'application/x-www-form-urlencoded',
-      "Authorization": "Basic Y2xpZW50OlNpbXBsZVBhc3N3b3JkIyQl"
+      "Authorization": "Basic Y2xpZW50OlNpbXBsZVBhc3N3b3JkIyQl",
     })
   }
 
@@ -30,10 +30,14 @@ export class ApiService {
   userData: any;
   authDone: boolean;
 
-  newsData = [{ albums: [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }], advise: [{ id: 5, author: '5 Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 4, author: '4 Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 3, author: '3 Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }], news: [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }], popular: [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }], done: false }];
+  newsData = [{
+    albums: [{ id: 1, artist: 'Вельвет', title: 'Всё хорошо', img: 'assets/Rectangle 4.png', files_detail: [{ id: 1, album: "Ближе нельзя", artist: 'Вельвет', composer: '', duration: "274.768392", title: 'Всё хорошо', time: '04:49', genre: "Rusrock", is_available: false, writer: "", year: "2013", file_url: "/media/music/Вельвет/2013 - Вельвет - Ближе нельзя/13. Всё хорошо.mp3" }] }],
+    advise: [{ id: 1, album: "Ближе нельзя", artist: 'Вельвет', composer: '', duration: "274.768392", title: 'Всё хорошо', time: '04:49', genre: "Rusrock", is_available: false, writer: "", year: "2013", file_url: "/media/music/Вельвет/2013 - Вельвет - Ближе нельзя/13. Всё хорошо.mp3", img: 'assets/Rectangle 4.png' }],
+    news: [{ id: 1, album: "Ближе нельзя", artist: 'Вельвет', composer: '', duration: "274.768392", title: 'Всё хорошо', time: '04:49', genre: "Rusrock", is_available: false, writer: "", year: "2013", file_url: "/media/music/Вельвет/2013 - Вельвет - Ближе нельзя/13. Всё хорошо.mp3", img: 'assets/Rectangle 4.png' }],
+    popular: [{ id: 1, album: "Ближе нельзя", artist: 'Вельвет', composer: '', duration: "274.768392", title: 'Всё хорошо', time: '04:49', genre: "Rusrock", is_available: false, writer: "", year: "2013", file_url: "/media/music/Вельвет/2013 - Вельвет - Ближе нельзя/13. Всё хорошо.mp3", img: 'assets/Rectangle 4.png' }], done: false
+  }];
 
-
-  favoritesData = [{ playlists: [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', files: [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }], imgSrc: 'assets/Rectangle 4.png' }, { id: 2, title: 'Новый плейлист', files: [{ id: 1, author: 'Новый плейлист', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }], imgSrc: 'assets/Rectangle 4.png' }], myTracks: [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 3, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 4, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }], done: false }];
+  favoritesData = [{ playlists: null, myTracks: [], done: false }];
 
   tracksСache = [];
 
@@ -75,8 +79,12 @@ export class ApiService {
         this.favoritesData[0].done = true;
       }
       else {
-        this.storage.set('favoritesData', this.favoritesData);
-        this.favoritesData[0].done = true;
+        this.getAllPlaylists()
+          .subscribe(Response => {
+            this.favoritesData[0].playlists = Response;
+            this.storage.set('favoritesData', this.favoritesData);
+            this.favoritesData[0].done = true;
+          });
       }
     });
 
@@ -199,10 +207,31 @@ export class ApiService {
   }
 
 
+  toHHMMSS(unix_timestamp) {
+    if (unix_timestamp > 0) {
+      var date = new Date(unix_timestamp * 1000);
+      var minutes = "0" + date.getMinutes();
+      var seconds = "0" + date.getSeconds();
+      return minutes.substr(-2) + ':' + seconds.substr(-2);
+    }
+    else {
+      var minutes = "00";
+      var seconds = "00";
+      return minutes + ':' + seconds;
+    }
+  }
+
+  //Получение треклистов
+  getAllPlaylists() {
+    return this.httpClient
+      .get('https://music.oneclick.ru:26443/api/v1/playlists', this.httpOptionsJson)
+      .pipe(catchError(this.handleError))
+  }
+
   //Получение треков из плейлиста
   getPlaylist(id) {
     return this.httpClient
-      .get('http://music.oneclick.ru:26480/api/v1/playlists/'+id, this.httpOptionsJson)
+      .get('https://music.oneclick.ru:26443/api/v1/playlists/' + id, this.httpOptionsJson)
       .pipe(catchError(this.handleError))
   }
 
@@ -211,53 +240,86 @@ export class ApiService {
   setNewsData() {
 
   }
-  //Получение избранных данных
-  setFavoritesData() {
 
-  }
 
   //Создание плейлиста
   addPlaylist(title) {
-    let data = { id: new Date().getTime(), author: null, title: title, files: [], imgSrc: null }
+    let data = { id: new Date().getTime(), artist: null, title: title, files_detail: [] }
     //data['client'] = this.userData['id'];
     data['client'] = 1;
-    this.favoritesData[0].playlists.push({ id: new Date().getTime(), author: null, title: title, files: [], imgSrc: null });
+
     this.storage.set('favoritesData', this.favoritesData);
+    console.log('send', data);
     return this.httpClient
-      .post('http://music.oneclick.ru:26480/api/v1/playlists/', data, this.httpOptionsJson)
+      .post('https://music.oneclick.ru:26443/api/v1/playlists/', data, this.httpOptionsJson)
       .pipe(catchError(this.handleError))
+      .subscribe(Response => {
+        this.favoritesData[0].playlists.push(Response);
+        this.storage.set('favoritesData', this.favoritesData);
+        console.log('get', Response);
+        return Response;
+      });
   }
 
   //Сохранение изменений плейлиста
-  savePlaylist(data){
-  this.favoritesData[0].playlists = data;
+  savePlaylist(data) {
+    this.favoritesData[0].playlists = data;
   }
 
   //Редактирование плейлиста
   editPlatlist(id, data) {
-    console.log(id,data)
-    //data['client'] = this.userData['id'];
-    data['client'] = 1;
-    this.favoritesData[0].playlists.filter(x => x.id == id)[0] = data;
-    return this.httpClient
-      .patch('http://music.oneclick.ru:26480/api/v1/playlists/'+id, data, this.httpOptionsJson)
+    console.log('send', data);
+    this.httpClient
+      .patch('https://music.oneclick.ru:26443/api/v1/playlists/' + id, data, this.httpOptionsJson)
       .pipe(catchError(this.handleError))
+      .subscribe((Response) => {
+        this.favoritesData[0].playlists.filter(x => x.id == id)[0] = data;
+        this.storage.set('favoritesData', this.favoritesData);
+        console.log('get', Response);
+      });
   }
 
   //Удаление плейлиста
   deletePlatlist(id) {
     return this.httpClient
-      .delete('http://music.oneclick.ru:26480/api/v1/playlists/'+id, this.httpOptionsJson)
+      .delete('https://music.oneclick.ru:26443/api/v1/playlists/' + id, this.httpOptionsJson)
       .pipe(catchError(this.handleError))
+      .subscribe((Response) => {
+        const index: number = this.favoritesData[0].playlists.indexOf(this.favoritesData[0].playlists.filter(x => x.id == id)[0]);
+        console.log(index);
+        if (index !== -1) {
+          this.favoritesData[0].playlists.splice(index, 1);
+        }
+        this.storage.set('favoritesData', this.favoritesData);
+        console.log('get', Response);
+      });
   }
 
 
-  //Поиск плейлистов и треков
-  search(limit, offset, searchString) {
+  //Поиск треков в плейлистах (лишнее)
+  searchPlaylists(limit, offset, searchString) {
     return this.httpClient
-      .get('http://music.oneclick.ru:26480/api/v1/playlists?limit='+limit+'&offset='+offset+'&q='+searchString, this.httpOptionsJson)
+      .get('https://music.oneclick.ru:26443/api/v1/playlists?limit=' + limit + '&offset=' + offset + '&q=' + searchString, this.httpOptionsJson)
       .pipe(catchError(this.handleError))
   }
+
+  //Поиск треков
+  searchTracks(limit, offset, searchString) {
+    return this.httpClient
+      .get('https://music.oneclick.ru:26443/api/v1/files?limit=' + limit + '&offset=' + offset + '&q=' + searchString, this.httpOptionsJson)
+      .pipe(catchError(this.handleError))
+  }
+
+  //Внесение в таблицу воспроизведений записи о воспроизведении конкретного файла
+  counters(id) {
+    let data = { "date": new Date(), "file": id, "client": 0 };
+    data['client'] = 1;
+    console.log('send', data);
+    return this.httpClient
+      .post('https://music.oneclick.ru:26443/api/v1/counters', data, this.httpOptionsJson)
+      .pipe(catchError(this.handleError))
+  }
+
 
 
 }

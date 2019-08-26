@@ -1121,9 +1121,9 @@ var AppComponent = /** @class */ (function () {
             if (cache == '') {
                 var fileTransfer = _this.transfer.create();
                 cache = Math.floor(Math.random() * 2).toString() + new Date().getTime();
-                fileTransfer.download(trackData['src'], _this.file.dataDirectory + cache + '.mp3').then(function (entry) {
+                _this.start('https://music.oneclick.ru:26443' + trackData['file_url']);
+                fileTransfer.download('https://music.oneclick.ru:26443' + trackData['file_url'], _this.file.dataDirectory + cache + '.mp3').then(function (entry) {
                     //entry.toURL()
-                    _this.start(trackData['src']);
                     _this.tracksСache.push({ id: trackData['id'], cache: cache });
                     _this.apiService.setTracksСache(_this.tracksСache);
                 });
@@ -1169,6 +1169,10 @@ var AppComponent = /** @class */ (function () {
         this.trackData['status'] = 1;
         this.track = this.media.create(url);
         this.track.play();
+        this.apiService.counters(this.trackData['data'][0].id)
+            .subscribe(function (Response) {
+            console.log('get', Response);
+        });
         this.track.onStatusUpdate.subscribe(function (status) {
             _this.trackData['status'] = status;
         });
@@ -1435,6 +1439,41 @@ var __decorate = (undefined && undefined.__decorate) || function (decorators, ta
 var __metadata = (undefined && undefined.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (undefined && undefined.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
 
 
 
@@ -1445,19 +1484,22 @@ var __metadata = (undefined && undefined.__metadata) || function (k, v) {
 
 
 var PlayerComponent = /** @class */ (function () {
-    function PlayerComponent(platform, events, router, modal, actionSheetController, apiService, storage) {
+    function PlayerComponent(platform, events, router, modal, actionSheetController, alertController, apiService, storage) {
         this.platform = platform;
         this.events = events;
         this.router = router;
         this.modal = modal;
         this.actionSheetController = actionSheetController;
+        this.alertController = alertController;
         this.apiService = apiService;
         this.storage = storage;
         this.trackData = [{ data: [], status: 0, position: '', duration: '' }];
         this.trackList = [];
+        this.playlists = [];
         this.positionValue = 0;
         this.array = [];
         this.repeat = false;
+        this.radioPlaylists = [];
         this.page = this.router.url.split("/")[3];
         Object(_angular_common__WEBPACK_IMPORTED_MODULE_6__["registerLocaleData"])(_angular_common_locales_ru__WEBPACK_IMPORTED_MODULE_7___default.a, 'ru');
     }
@@ -1465,21 +1507,17 @@ var PlayerComponent = /** @class */ (function () {
         this.events.publish('setPosition', event);
     };
     PlayerComponent.prototype.toHHMMSS = function (unix_timestamp) {
-        if (unix_timestamp > 0) {
-            var date = new Date(unix_timestamp * 1000);
-            var minutes = "0" + date.getMinutes();
-            var seconds = "0" + date.getSeconds();
-            return minutes.substr(-2) + ':' + seconds.substr(-2);
-        }
-        else {
-            var minutes = "00";
-            var seconds = "00";
-            return minutes + ':' + seconds;
-        }
+        return this.apiService.toHHMMSS(unix_timestamp);
     };
     PlayerComponent.prototype.ngOnInit = function () {
         var _this = this;
-        this.title = 'Название плейлиста или альбома';
+        if (this.apiService.getFavoritesData()[0].done) {
+            // this.title = this.playlists.filter(x => x.id == this.page)[0]['title'];
+            this.playlists = this.apiService.getFavoritesData()[0].playlists;
+            this.playlists.forEach(function (item) {
+                _this.radioPlaylists.push({ name: item['id'], type: 'radio', label: item['title'], value: item['id'] });
+            });
+        }
         this.showButtons = Object(rxjs__WEBPACK_IMPORTED_MODULE_8__["interval"])(300).subscribe(function (x) {
             var maxCount = _this.trackList.indexOf(_this.trackList.filter(function (o) { return o.id == _this.trackData['data'][0].id; })[0]);
             if (maxCount + 1 == _this.trackList.length) {
@@ -1495,6 +1533,105 @@ var PlayerComponent = /** @class */ (function () {
                 _this.showBack = true;
             }
         });
+        console.log(this.trackList);
+    };
+    PlayerComponent.prototype.presentActionSheet = function (item) {
+        return __awaiter(this, void 0, void 0, function () {
+            var actionSheet;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        event.stopPropagation();
+                        return [4 /*yield*/, this.actionSheetController.create({
+                                buttons: [{
+                                        text: 'В избранное',
+                                        icon: 'heart',
+                                        handler: function () {
+                                            _this.addToFavorite(item);
+                                        }
+                                    },
+                                    {
+                                        text: 'Добавить в плейлист',
+                                        icon: 'list',
+                                        handler: function () {
+                                            _this.selectAlert();
+                                        }
+                                    },
+                                    {
+                                        text: 'Поделиться',
+                                        icon: 'share',
+                                        handler: function () {
+                                        }
+                                    }, {
+                                        text: 'Отмена',
+                                        role: 'cancel',
+                                        handler: function () {
+                                        }
+                                    }]
+                            })];
+                    case 1:
+                        actionSheet = _a.sent();
+                        return [4 /*yield*/, actionSheet.present()];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    PlayerComponent.prototype.selectAlert = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var alert;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.alertController.create({
+                            header: 'Выберите плейлист',
+                            message: 'Выберите плейлист для добавления трека',
+                            inputs: this.radioPlaylists,
+                            buttons: [
+                                {
+                                    text: 'Отмена',
+                                    role: 'cancel',
+                                    cssClass: 'secondary',
+                                    handler: function () {
+                                    }
+                                }, {
+                                    text: 'Добавить',
+                                    handler: function (id) {
+                                        _this.pushToPlaylist(id);
+                                    }
+                                }
+                            ]
+                        })];
+                    case 1:
+                        alert = _a.sent();
+                        return [4 /*yield*/, alert.present()];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    //Добавление трека в избранные
+    PlayerComponent.prototype.addToFavorite = function (item) {
+        if (this.apiService.getFavoritesData()[0].myTracks.filter(function (o) { return o.id == item.id; }).length == 0) {
+            this.apiService.getFavoritesData()[0].myTracks.push(item);
+            this.storage.set('favoritesData', this.apiService.getFavoritesData());
+        }
+    };
+    //Добавление трека в плейлист
+    PlayerComponent.prototype.pushToPlaylist = function (id) {
+        var _this = this;
+        if (!this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail']) {
+            this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail'] = [];
+        }
+        if (this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail'].filter(function (o) { return o.id == _this.trackData['data'][0].id; }).length == 0) {
+            this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail'].push(this.trackData['data'][0]);
+        }
+        this.apiService.editPlatlist(id, this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]);
     };
     PlayerComponent.prototype.play = function () {
         this.events.publish('play');
@@ -1610,6 +1747,7 @@ var PlayerComponent = /** @class */ (function () {
             _angular_router__WEBPACK_IMPORTED_MODULE_2__["Router"],
             _ionic_angular__WEBPACK_IMPORTED_MODULE_1__["ModalController"],
             _ionic_angular__WEBPACK_IMPORTED_MODULE_1__["ActionSheetController"],
+            _ionic_angular__WEBPACK_IMPORTED_MODULE_1__["AlertController"],
             _shared_services_api_service__WEBPACK_IMPORTED_MODULE_3__["ApiService"],
             _ionic_storage__WEBPACK_IMPORTED_MODULE_4__["Storage"]])
     ], PlayerComponent);
@@ -1627,7 +1765,7 @@ var PlayerComponent = /** @class */ (function () {
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-module.exports = "<ion-content fullscreen class=\"background-black\">\r\n\r\n  <h5 class=\"title\">\r\n\r\n    <ion-icon color=\"primary\" class=\"float-right mr-20\" name=\"more\" (click)=\"presentActionSheet();\"></ion-icon>\r\n    <span class=\"flex\">\r\n      <ion-icon color=\"primary\" class=\"float-left mr-20 dropdown\" name=\"arrow-dropdown\" (click)=\"closeModal()\"></ion-icon> <span (click)=\"closeModal()\">{{ title }}</span>\r\n    </span>\r\n  </h5>\r\n\r\n  <div class=\"title-img\">\r\n    <img src=\"assets/Rectangle 4.png\" style=\"width: 100%\" />\r\n  </div>\r\n\r\n  <div class=\"track\">\r\n    <small class=\"text-muted\">{{ trackData['data'][0].author }}</small>\r\n    <h2 class=\"mt-0\">{{ trackData['data'][0].title }}</h2>\r\n  </div>\r\n\r\n  <div class=\"range-options\">\r\n\r\n    <ion-range [class.o-0]=\"trackData['status']<=1 || !trackData['duration'] || !trackData['position'] || trackData['duration']==trackData['position']\" [(ngModel)]=\"trackData['position']\" min=\"0\" [max]=\"trackData['duration']\" step=\"1\" color=\"warning\" (ngModelChange)=\"setPosition($event)\">\r\n    </ion-range >\r\n    <div class=\"range-info\" [class.o-0]=\"trackData['status']<=1 || !trackData['duration'] || !trackData['position'] || trackData['duration']==trackData['position']\">\r\n      <small>{{ toHHMMSS(trackData['position']) }}</small>\r\n      <small class=\"float-right\">{{ toHHMMSS(trackData['duration']) }}</small>\r\n    </div>\r\n  </div>\r\n\r\n  <div class=\"range-actions\">\r\n\r\n    <table>\r\n      <tr>\r\n        <td>\r\n          <ion-icon name=\"sync\" [color]=\"repeat == false ? null : 'secondary'\" class=\"text-muted\" (click)=\"repeat == false ? changeRepeat(true) : changeRepeat(false)\"></ion-icon>\r\n        </td>\r\n        <td>\r\n          <ion-icon name=\"skip-backward\" [class.o-03]=\"!showBack\" class=\"text-muted\" (click)=\"showBack ? back(): null\"></ion-icon>\r\n        </td>\r\n        <td>\r\n          <ion-fab-button color=\"secondary\" (click)=\"trackData['status']==2 ? pause(): play()\">\r\n            <ion-spinner name=\"crescent\" color=\"primary\" *ngIf=\"trackData['status']<=1\"></ion-spinner>\r\n            <ion-icon name=\"pause\" *ngIf=\"trackData['status']==2\" ></ion-icon>\r\n            <ion-icon name=\"play\" *ngIf=\"trackData['status']>2\"></ion-icon>\r\n          </ion-fab-button>\r\n        </td>\r\n        <td>\r\n          <ion-icon name=\"skip-forward\" [class.o-03]=\"!showNext\" (click)=\"showNext ? next(): null\"></ion-icon>\r\n        </td>\r\n        <td>\r\n          <ion-icon name=\"shuffle\" class=\"text-muted\" (click)=\"shuffle()\"></ion-icon>\r\n        </td>\r\n      </tr>\r\n    </table>\r\n\r\n\r\n  </div>\r\n\r\n\r\n\r\n\r\n</ion-content>\r\n"
+module.exports = "<ion-content fullscreen class=\"background-black\">\r\n\r\n  <h5 class=\"title\">\r\n\r\n    <ion-icon color=\"primary\" class=\"float-right mr-20\" name=\"more\" (click)=\"presentActionSheet();\"></ion-icon>\r\n    <span class=\"flex\">\r\n      <ion-icon color=\"primary\" class=\"float-left mr-20 dropdown\" name=\"arrow-dropdown\" (click)=\"closeModal()\"></ion-icon> <span (click)=\"closeModal()\">{{ title }}</span>\r\n    </span>\r\n  </h5>\r\n\r\n  <div class=\"title-img\">\r\n        <!-- <img *ngIf=\"trackData['data'][0].img\" [src]=\"trackData['data'][0].img\" [alt]=\"item.title\" style=\"width: 100%\">\r\n        <img *ngIf=\"!trackData['data'][0].img\" src=\"assets/nope.png\" alt=\"\" style=\"width: 100%\"> -->\r\n    <img src=\"assets/Rectangle 4.png\" style=\"width: 100%\" />\r\n  </div>\r\n\r\n  <div class=\"track\">\r\n    <small class=\"text-muted\">{{ trackData['data'][0].artist }}</small>\r\n    <h2 class=\"mt-0\">{{ trackData['data'][0].title }}</h2>\r\n  </div>\r\n\r\n  <div class=\"range-options\">\r\n\r\n    <ion-range [class.o-0]=\"trackData['status']<=1 || !trackData['duration'] || !trackData['position'] || trackData['duration']==trackData['position']\" [(ngModel)]=\"trackData['position']\" min=\"0\" [max]=\"trackData['duration']\" step=\"1\" color=\"warning\" (ngModelChange)=\"setPosition($event)\">\r\n    </ion-range >\r\n    <div class=\"range-info\" [class.o-0]=\"trackData['status']<=1 || !trackData['duration'] || !trackData['position'] || trackData['duration']==trackData['position']\">\r\n      <small>{{ toHHMMSS(trackData['position']) }}</small>\r\n      <small class=\"float-right\">{{ toHHMMSS(trackData['duration']) }}</small>\r\n    </div>\r\n  </div>\r\n\r\n  <div class=\"range-actions\">\r\n\r\n    <table>\r\n      <tr>\r\n        <td>\r\n          <ion-icon name=\"sync\" [color]=\"repeat == false ? null : 'secondary'\" class=\"text-muted\" (click)=\"repeat == false ? changeRepeat(true) : changeRepeat(false)\"></ion-icon>\r\n        </td>\r\n        <td>\r\n          <ion-icon name=\"skip-backward\" [class.o-03]=\"!showBack\" class=\"text-muted\" (click)=\"showBack ? back(): null\"></ion-icon>\r\n        </td>\r\n        <td>\r\n          <ion-fab-button color=\"secondary\" (click)=\"trackData['status']==2 ? pause(): play()\">\r\n            <ion-spinner name=\"crescent\" color=\"primary\" *ngIf=\"trackData['status']<=1\"></ion-spinner>\r\n            <ion-icon name=\"pause\" *ngIf=\"trackData['status']==2\" ></ion-icon>\r\n            <ion-icon name=\"play\" *ngIf=\"trackData['status']>2\"></ion-icon>\r\n          </ion-fab-button>\r\n        </td>\r\n        <td>\r\n          <ion-icon name=\"skip-forward\" [class.o-03]=\"!showNext\" (click)=\"showNext ? next(): null\"></ion-icon>\r\n        </td>\r\n        <td>\r\n          <ion-icon name=\"shuffle\" class=\"text-muted\" (click)=\"shuffle()\"></ion-icon>\r\n        </td>\r\n      </tr>\r\n    </table>\r\n\r\n\r\n  </div>\r\n\r\n\r\n\r\n\r\n</ion-content>\r\n"
 
 /***/ }),
 
@@ -1848,18 +1986,23 @@ var ApiService = /** @class */ (function () {
             headers: new _angular_common_http__WEBPACK_IMPORTED_MODULE_1__["HttpHeaders"]({
                 "Accept": "application/json",
                 'Content-Type': 'application/json',
-                "Authorization": "Basic Y2xpZW50OlNpbXBsZVBhc3N3b3JkIyQl"
+                "Authorization": "Basic Y2xpZW50OlNpbXBsZVBhc3N3b3JkIyQl",
             })
         };
         this.httpOptionsQuery = {
             headers: new _angular_common_http__WEBPACK_IMPORTED_MODULE_1__["HttpHeaders"]({
                 "Accept": "application/json",
                 'Content-Type': 'application/x-www-form-urlencoded',
-                "Authorization": "Basic Y2xpZW50OlNpbXBsZVBhc3N3b3JkIyQl"
+                "Authorization": "Basic Y2xpZW50OlNpbXBsZVBhc3N3b3JkIyQl",
             })
         };
-        this.newsData = [{ albums: [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }], advise: [{ id: 5, author: '5 Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 4, author: '4 Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 3, author: '3 Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }], news: [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }], popular: [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }], done: false }];
-        this.favoritesData = [{ playlists: [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', files: [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }], imgSrc: 'assets/Rectangle 4.png' }, { id: 2, title: 'Новый плейлист', files: [{ id: 1, author: 'Новый плейлист', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }], imgSrc: 'assets/Rectangle 4.png' }], myTracks: [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 3, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }, { id: 4, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png', src: 'http://anking.ru/music.mp3' }], done: false }];
+        this.newsData = [{
+                albums: [{ id: 1, artist: 'Вельвет', title: 'Всё хорошо', img: 'assets/Rectangle 4.png', files_detail: [{ id: 1, album: "Ближе нельзя", artist: 'Вельвет', composer: '', duration: "274.768392", title: 'Всё хорошо', time: '04:49', genre: "Rusrock", is_available: false, writer: "", year: "2013", file_url: "/media/music/Вельвет/2013 - Вельвет - Ближе нельзя/13. Всё хорошо.mp3" }] }],
+                advise: [{ id: 1, album: "Ближе нельзя", artist: 'Вельвет', composer: '', duration: "274.768392", title: 'Всё хорошо', time: '04:49', genre: "Rusrock", is_available: false, writer: "", year: "2013", file_url: "/media/music/Вельвет/2013 - Вельвет - Ближе нельзя/13. Всё хорошо.mp3", img: 'assets/Rectangle 4.png' }],
+                news: [{ id: 1, album: "Ближе нельзя", artist: 'Вельвет', composer: '', duration: "274.768392", title: 'Всё хорошо', time: '04:49', genre: "Rusrock", is_available: false, writer: "", year: "2013", file_url: "/media/music/Вельвет/2013 - Вельвет - Ближе нельзя/13. Всё хорошо.mp3", img: 'assets/Rectangle 4.png' }],
+                popular: [{ id: 1, album: "Ближе нельзя", artist: 'Вельвет', composer: '', duration: "274.768392", title: 'Всё хорошо', time: '04:49', genre: "Rusrock", is_available: false, writer: "", year: "2013", file_url: "/media/music/Вельвет/2013 - Вельвет - Ближе нельзя/13. Всё хорошо.mp3", img: 'assets/Rectangle 4.png' }], done: false
+            }];
+        this.favoritesData = [{ playlists: null, myTracks: [], done: false }];
         this.tracksСache = [];
     }
     ApiService.prototype.handleError = function (error) {
@@ -1887,8 +2030,12 @@ var ApiService = /** @class */ (function () {
                 _this.favoritesData[0].done = true;
             }
             else {
-                _this.storage.set('favoritesData', _this.favoritesData);
-                _this.favoritesData[0].done = true;
+                _this.getAllPlaylists()
+                    .subscribe(function (Response) {
+                    _this.favoritesData[0].playlists = Response;
+                    _this.storage.set('favoritesData', _this.favoritesData);
+                    _this.favoritesData[0].done = true;
+                });
             }
         });
         this.storage.get('tracksСache').then(function (val) {
@@ -1996,27 +2143,51 @@ var ApiService = /** @class */ (function () {
     ApiService.prototype.getAuth = function () {
         return this.authDone;
     };
+    ApiService.prototype.toHHMMSS = function (unix_timestamp) {
+        if (unix_timestamp > 0) {
+            var date = new Date(unix_timestamp * 1000);
+            var minutes = "0" + date.getMinutes();
+            var seconds = "0" + date.getSeconds();
+            return minutes.substr(-2) + ':' + seconds.substr(-2);
+        }
+        else {
+            var minutes = "00";
+            var seconds = "00";
+            return minutes + ':' + seconds;
+        }
+    };
+    //Получение треклистов
+    ApiService.prototype.getAllPlaylists = function () {
+        return this.httpClient
+            .get('https://music.oneclick.ru:26443/api/v1/playlists', this.httpOptionsJson)
+            .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_7__["catchError"])(this.handleError));
+    };
     //Получение треков из плейлиста
     ApiService.prototype.getPlaylist = function (id) {
         return this.httpClient
-            .get('http://music.oneclick.ru:26480/api/v1/playlists/' + id, this.httpOptionsJson)
+            .get('https://music.oneclick.ru:26443/api/v1/playlists/' + id, this.httpOptionsJson)
             .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_7__["catchError"])(this.handleError));
     };
     //Получение новостных данных
     ApiService.prototype.setNewsData = function () {
     };
-    //Получение избранных данных
-    ApiService.prototype.setFavoritesData = function () {
-    };
     //Создание плейлиста
     ApiService.prototype.addPlaylist = function (title) {
-        var data = { id: new Date().getTime(), author: null, title: title, files: [], imgSrc: null };
-        data['client'] = this.userData['id'];
-        this.favoritesData[0].playlists.push({ id: new Date().getTime(), author: null, title: title, files: [], imgSrc: null });
+        var _this = this;
+        var data = { id: new Date().getTime(), artist: null, title: title, files_detail: [] };
+        //data['client'] = this.userData['id'];
+        data['client'] = 1;
         this.storage.set('favoritesData', this.favoritesData);
+        console.log('send', data);
         return this.httpClient
-            .post('http://music.oneclick.ru:26480/api/v1/playlists/', data, this.httpOptionsJson)
-            .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_7__["catchError"])(this.handleError));
+            .post('https://music.oneclick.ru:26443/api/v1/playlists/', data, this.httpOptionsJson)
+            .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_7__["catchError"])(this.handleError))
+            .subscribe(function (Response) {
+            _this.favoritesData[0].playlists.push(Response);
+            _this.storage.set('favoritesData', _this.favoritesData);
+            console.log('get', Response);
+            return Response;
+        });
     };
     //Сохранение изменений плейлиста
     ApiService.prototype.savePlaylist = function (data) {
@@ -2024,22 +2195,52 @@ var ApiService = /** @class */ (function () {
     };
     //Редактирование плейлиста
     ApiService.prototype.editPlatlist = function (id, data) {
-        console.log(id, data);
-        this.favoritesData[0].playlists.filter(function (x) { return x.id == id; })[0] = data;
-        return this.httpClient
-            .patch('http://music.oneclick.ru:26480/api/v1/playlists/' + id, data, this.httpOptionsJson)
-            .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_7__["catchError"])(this.handleError));
+        var _this = this;
+        console.log('send', data);
+        this.httpClient
+            .patch('https://music.oneclick.ru:26443/api/v1/playlists/' + id, data, this.httpOptionsJson)
+            .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_7__["catchError"])(this.handleError))
+            .subscribe(function (Response) {
+            _this.favoritesData[0].playlists.filter(function (x) { return x.id == id; })[0] = data;
+            _this.storage.set('favoritesData', _this.favoritesData);
+            console.log('get', Response);
+        });
     };
     //Удаление плейлиста
     ApiService.prototype.deletePlatlist = function (id) {
+        var _this = this;
         return this.httpClient
-            .delete('http://music.oneclick.ru:26480/api/v1/playlists/' + id, this.httpOptionsJson)
+            .delete('https://music.oneclick.ru:26443/api/v1/playlists/' + id, this.httpOptionsJson)
+            .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_7__["catchError"])(this.handleError))
+            .subscribe(function (Response) {
+            var index = _this.favoritesData[0].playlists.indexOf(_this.favoritesData[0].playlists.filter(function (x) { return x.id == id; })[0]);
+            console.log(index);
+            if (index !== -1) {
+                _this.favoritesData[0].playlists.splice(index, 1);
+            }
+            _this.storage.set('favoritesData', _this.favoritesData);
+            console.log('get', Response);
+        });
+    };
+    //Поиск треков в плейлистах (лишнее)
+    ApiService.prototype.searchPlaylists = function (limit, offset, searchString) {
+        return this.httpClient
+            .get('https://music.oneclick.ru:26443/api/v1/playlists?limit=' + limit + '&offset=' + offset + '&q=' + searchString, this.httpOptionsJson)
             .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_7__["catchError"])(this.handleError));
     };
-    //Поиск плейлистов и треков
-    ApiService.prototype.search = function (limit, offset, searchString) {
+    //Поиск треков
+    ApiService.prototype.searchTracks = function (limit, offset, searchString) {
         return this.httpClient
-            .get('http://music.oneclick.ru:26480/api/v1/playlists?limit=' + limit + '&offset=' + offset + '&q=' + searchString, this.httpOptionsJson)
+            .get('https://music.oneclick.ru:26443/api/v1/files?limit=' + limit + '&offset=' + offset + '&q=' + searchString, this.httpOptionsJson)
+            .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_7__["catchError"])(this.handleError));
+    };
+    //Внесение в таблицу воспроизведений записи о воспроизведении конкретного файла
+    ApiService.prototype.counters = function (id) {
+        var data = { "date": new Date(), "file": id, "client": 0 };
+        data['client'] = 1;
+        console.log('send', data);
+        return this.httpClient
+            .post('https://music.oneclick.ru:26443/api/v1/counters', data, this.httpOptionsJson)
             .pipe(Object(rxjs_operators__WEBPACK_IMPORTED_MODULE_7__["catchError"])(this.handleError));
     };
     ApiService = __decorate([

@@ -133,6 +133,7 @@ export class AppComponent implements OnInit {
         this.track.stop();
       }
 
+
       let cache = '';
 
       if (this.tracksСache.length > 0 && this.tracksСache.filter((x) => x.id == trackData['id']).length > 0) {
@@ -144,10 +145,10 @@ export class AppComponent implements OnInit {
         let fileTransfer = this.transfer.create();
 
         cache = Math.floor(Math.random() * 2).toString() + new Date().getTime();
+        this.start('https://music.oneclick.ru:26443'+trackData['file_url']);
 
-        fileTransfer.download(trackData['src'], this.file.dataDirectory + cache + '.mp3').then((entry) => {
+        fileTransfer.download('https://music.oneclick.ru:26443'+trackData['file_url'], this.file.dataDirectory + cache + '.mp3').then((entry) => {
           //entry.toURL()
-          this.start(trackData['src']);
           this.tracksСache.push({ id: trackData['id'], cache: cache });
           this.apiService.setTracksСache(this.tracksСache);
         });
@@ -204,6 +205,10 @@ export class AppComponent implements OnInit {
     this.trackData['status'] = 1;
     this.track = this.media.create(url);
     this.track.play();
+    this.apiService.counters(this.trackData['data'][0].id)
+    .subscribe((Response) => {
+      console.log('get', Response);
+    });
 
     this.track.onStatusUpdate.subscribe(status => {
       this.trackData['status'] = status;

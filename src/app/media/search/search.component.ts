@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { Events, Platform, ModalController, LoadingController, IonVirtualScroll, IonInfiniteScroll, IonSearchbar, ActionSheetController, AlertController } from '@ionic/angular';
 import { Media, MediaObject } from '@ionic-native/media/ngx';
 import { Storage } from '@ionic/storage';
+import { FilterPipe } from '../shared/pipes/filter.pipe';
 import { ApiService } from '../shared/services/api.service';
 import { trigger, style, animate, transition, state } from '@angular/animations';
 import { registerLocaleData } from '@angular/common';
@@ -14,6 +15,7 @@ import { interval } from 'rxjs';
   selector: 'app-search',
   templateUrl: 'search.html',
   styleUrls: ['search.scss'],
+  providers: [FilterPipe],
   animations: [
     trigger(
       'FadeIn', [
@@ -69,9 +71,10 @@ export class SearchComponent implements OnInit, OnDestroy {
   };
   filterSearch;
 
-  playlists = [];
+  playlists;
 
-  searchList = [];
+  searchList;
+  searchPlaylists;
 
   trackData;
   track: MediaObject;
@@ -81,6 +84,11 @@ export class SearchComponent implements OnInit, OnDestroy {
   popular = [];
   slideShow;
   getTrackDataEvent;
+  radioPlaylists = [];
+
+  showLoading;
+  showMore = true;
+  limit = 100;
 
   @ViewChild(IonSearchbar) searchbar: IonSearchbar;
   @ViewChild(IonInfiniteScroll) infiniteScroll: IonInfiniteScroll;
@@ -94,6 +102,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     private platform: Platform,
     private actionSheetController: ActionSheetController,
     private alertController: AlertController,
+    private filterPipe: FilterPipe,
     private storage: Storage
   ) {
     registerLocaleData(localeRu, 'ru');
@@ -116,27 +125,74 @@ export class SearchComponent implements OnInit, OnDestroy {
     }, 100);
   }
 
+  //Подгрузка треков
+  loadData(event) {
+    this.apiService.searchTracks(this.limit, this.searchList.length, this.filterSearch)
+      .subscribe((Response) => {
+
+        var myArr: any[] = [Response];
+
+        if ((<any>myArr[0]).length < this.limit) {
+          this.showMore = false;
+        }
+        else {
+          this.showMore = true;
+        }
+
+        (<any>myArr[0]).forEach((item) => {
+          this.searchList.push(item);
+        });
+
+        if (this.virtualScroll) {
+          this.virtualScroll.checkEnd();
+          event.target.complete();
+        }
+      });
+  }
+
   //Поиск треков и плейлистов на сервере
   onSearch(event) {
     let search = event.target.value.toLowerCase();
     if (search.length > 0) {
       this.filterSearch = search;
-      this.playlists = [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', tracks: [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }], imgSrc: 'assets/Rectangle 4.png' }, { id: 2, title: 'Новый плейлист', tracks: [{ id: 1, author: 'Новый плейлист', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }], imgSrc: 'assets/Rectangle 4.png' }, { id: 3, title: 'Новый плейлист', tracks: [{ id: 1, author: 'Новый плейлист', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }], imgSrc: 'assets/Rectangle 4.png' }];
+      this.showLoading = true;
+      this.searchPlaylists = null;
+      this.searchList = null;
+      this.showMore = true;
 
-      if (this.searchList.length > 5) {
-        this.searchList = [];
-      }
-      this.searchList.push({ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' });
+      this.searchPlaylists = this.filterPipe.transform(this.playlists, { artist: search, title: search }, false);
+
+      this.apiService.searchPlaylists(this.limit, 0, this.filterSearch)
+        .subscribe((Response) => {
+          this.searchPlaylists = Response;
+        });
+
+
+      this.apiService.searchTracks(this.limit, 0, this.filterSearch)
+        .subscribe((Response) => {
+
+          var myArr: any[] = [Response];
+
+          this.searchList = Response;
+          this.showLoading = false;
+
+          if ((<any>myArr[0]).length < this.limit) {
+            this.showMore = false;
+          }
+          if (this.virtualScroll) {
+            this.virtualScroll.checkRange(0);
+          }
+        });
     }
     else {
       this.searchList = [];
-      this.playlists = [];
+      this.searchPlaylists = [];
       this.filterSearch = false;
+      if (this.virtualScroll) {
+        this.virtualScroll.checkRange(0);
+      }
     }
 
-    if (this.virtualScroll) {
-      this.virtualScroll.checkRange(0);
-    }
 
   }
 
@@ -176,7 +232,7 @@ export class SearchComponent implements OnInit, OnDestroy {
         text: 'В избранное',
         icon: 'heart',
         handler: () => {
-
+          this.addToFavorite(item);
         }
       },
       {
@@ -205,51 +261,54 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
 
-    async selectAlert(item) {
-      const alert = await this.alertController.create({
-        header: 'Выберите плейлист',
-        message: 'Выберите плейлист для добавления трека',
-        inputs: [
-          {
-            name: '1',
-            type: 'radio',
-            label: 'Плейлист 1',
-            value: '1'
-          },
-          {
-            name: '2',
-            type: 'radio',
-            label: 'Плейлист 2',
-            value: '2'
-          }
-        ],
-        buttons: [
-          {
-            text: 'Отмена',
-            role: 'cancel',
-            cssClass: 'secondary',
-            handler: () => {
+  async selectAlert(item) {
+    const alert = await this.alertController.create({
+      header: 'Выберите плейлист',
+      message: 'Выберите плейлист для добавления трека',
+      inputs: this.radioPlaylists,
+      buttons: [
+        {
+          text: 'Отмена',
+          role: 'cancel',
+          cssClass: 'secondary',
+          handler: () => {
 
-            }
-          }, {
-            text: 'Добавить',
-            handler: (id) => {
-              this.pushToPlaylist(item, id);
-            }
           }
-        ]
-      });
+        }, {
+          text: 'Добавить',
+          handler: (id) => {
+            this.pushToPlaylist(item, id);
+          }
+        }
+      ]
+    });
 
-      await alert.present();
+    await alert.present();
+  }
+
+
+    //Добавление трека в избранные
+    addToFavorite(item){
+      if (this.apiService.getFavoritesData()[0].myTracks.filter(o => o.id == item.id).length == 0) {
+        this.apiService.getFavoritesData()[0].myTracks.push(item);
+        this.storage.set('favoritesData', this.apiService.getFavoritesData());
+      }
     }
 
-  //Добавление терка в плейлист
-  pushToPlaylist(item, id){
-    this.playlists.filter(x => x.id==id)[0].files.push({ id: item.id, author: item.author, title: item.title, time: item.time, imgSrc: item.imgSrc, src: item.src });
-    this.apiService.editPlatlist(id, this.playlists.filter(x => x.id==id))
-    .subscribe((Response) => {
-      console.log(Response);
-    });
+  //Добавление трека в плейлист
+  pushToPlaylist(item, id) {
+    if (!this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0]['files_detail']) {
+      this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0]['files_detail'] = [];
+    }
+    if (this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0]['files_detail'].filter(o => o.id == item.id).length == 0) {
+      this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0]['files_detail'].push(item);
+    }
+
+    this.apiService.editPlatlist(id, this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0])
+  }
+
+  toHHMMSS(unix_timestamp) {
+    return this.apiService.toHHMMSS(unix_timestamp);
   }
 
   ngOnInit() {
@@ -261,6 +320,10 @@ export class SearchComponent implements OnInit, OnDestroy {
 
         if (this.apiService.getFavoritesData()[0].done) {
           this.playlists = this.apiService.getFavoritesData()[0].playlists;
+
+          this.playlists.forEach((item) => {
+            this.radioPlaylists.push({ name: item['id'], type: 'radio', label: item['title'], value: item['id'] });
+          });
         }
         if (this.apiService.getNewsData()[0].done) {
 

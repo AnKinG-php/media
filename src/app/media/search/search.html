@@ -40,42 +40,50 @@
   <h1 class="title">Поиск</h1>
 
   <div class="serach-bar">
-    <ion-searchbar #searchbar debounce="500" [@FadeIn] placeholder="Что вы ищите?" clearIcon showCancelButton="always" cancelButtonText="Закрыть" (ionInput)="onSearch($event)" (ionCancel)="toggleSearchbar(false)" (keyup.enter)="toggleSearchbar(false)"></ion-searchbar>
+    <ion-searchbar #searchbar debounce="500" [@FadeIn] placeholder="Что вы ищите?" clearIcon showCancelButton="always" cancelButtonText="Закрыть" (ionChange)="onSearch($event)" (ionCancel)="toggleSearchbar(false)" (keyup.enter)="toggleSearchbar(false)"></ion-searchbar>
   </div>
 
 
-  <h1 class="title" *ngIf="filterSearch">Плейлисты
+  <h1 class="title" *ngIf="filterSearch && searchPlaylists &&  searchPlaylists.length>0">Плейлисты
 <ion-badge color="white">1</ion-badge></h1>
 
-<ion-slides #slide [options]="slideOpts" approxItemHeight="50" *ngIf="filterSearch && slideShow" [@FadeIn]>
-    <ion-slide *ngFor="let item of playlists" [routerLink]="['/media/search/playlist/'+item.id]" routerDirection="forward">
-      <img [src]="item.imgSrc" [alt]="item.title">
-      <h6 class="mt-5" *ngIf="item.author">{{ item.author }}<br /><small class="small text-muted">{{ item.title }}</small></h6>
-      <h6 class="mt-5" *ngIf="!item.author">{{ item.title }}<br /><small class="small text-muted">{{ item.tracks.length }} треков</small></h6>
+<ion-slides #slide [options]="slideOpts" approxItemHeight="50" *ngIf="filterSearch && searchPlaylists && searchPlaylists.length" [@FadeIn]>
+    <ion-slide *ngFor="let item of searchPlaylists" [routerLink]="['/media/search/playlist/'+item.id]" routerDirection="forward">
+      <img *ngIf="item.img" [src]="item.img" [alt]="item.title">
+      <img *ngIf="!item.img" src="assets/nope.png" alt="">
+      <h6 class="mt-5" *ngIf="item.artist">{{ item.artist }}<br /><small class="small text-muted">{{ item.title }}</small></h6>
+      <h6 class="mt-5" *ngIf="!item.artist">{{ item.title }}<br /><small class="small text-muted" *ngIf="item.files_detail">{{ item.files_detail.length }} треков</small></h6>
     </ion-slide>
   </ion-slides>
 
+  <div padding *ngIf="showLoading">
+      <ion-progress-bar  type="indeterminate" color="secondary" ></ion-progress-bar>
+  </div>
+
   <ion-list *ngIf="filterSearch">
-      <ion-list-header class="mb-0">
+
+
+      <ion-list-header class="mb-0" *ngIf="searchList && searchList.length>0">
         <h4 class="strong">Найдено</h4>
       </ion-list-header>
 
       <h6 class="text-center" *ngIf="filterSearch && searchList && searchList.length==0"><small>Пусто</small></h6>
 
-    <ion-virtual-scroll *ngIf="searchList.length>0" [items]="searchList" >
+    <ion-virtual-scroll *ngIf="searchList && searchList.length>0" [items]="searchList" >
       <div style="height: 70px;" *virtualItem="let item;">
 
           <ion-list>
 
             <ion-item lines="none" (click)="release(item, searchList)">
               <ion-thumbnail slot="start">
-                <img [src]="item.imgSrc" [alt]="item.author + ' - ' + item.title">
+                <img *ngIf="item.img" [src]="item.img" [alt]="item.title">
+                <img *ngIf="!item.img" src="assets/nope.png" alt="">
               </ion-thumbnail>
               <ion-label>
-                <h2>{{ item.author }}</h2>
+                <h2>{{ item.artist }}</h2>
                 <h3 class="text-muted">{{ item.title }}</h3>
               </ion-label>
-              <p class="track-time text-muted">{{ item.time }}</p>
+              <p class="track-time text-muted pl-5">{{ toHHMMSS(item.duration) }}</p>
               <ion-icon name="more" (click)="presentActionSheet(item)"></ion-icon>
             </ion-item>
 
@@ -86,6 +94,15 @@
       </div>
 
     </ion-virtual-scroll>
+
+    <ion-infinite-scroll *ngIf="filterSearch && searchList && searchList.length>0 && showMore" (ionInfinite)="loadData($event)">
+      <ion-infinite-scroll-content loadingSpinner="dots">
+      </ion-infinite-scroll-content>
+    </ion-infinite-scroll>
+
+
+
+
 </ion-list>
 
   <ion-list *ngIf="!filterSearch" class="mb-0">
@@ -98,13 +115,14 @@
 
     <ion-item lines="none" (click)="release(item, news)" *ngFor="let item of news">
       <ion-thumbnail slot="start">
-        <img [src]="item.imgSrc" [alt]="item.title">
+        <img *ngIf="item.img" [src]="item.img" [alt]="item.title">
+        <img *ngIf="!item.img" src="assets/nope.png" alt="">
       </ion-thumbnail>
       <ion-label>
-        <h2>{{ item.author }}</h2>
+        <h2>{{ item.artist }}</h2>
         <h3 class="text-muted">{{ item.title }}</h3>
       </ion-label>
-      <p class="track-time text-muted">{{ item.time }}</p>
+      <p class="track-time text-muted pl-5">{{ toHHMMSS(item.duration) }}</p>
       <ion-icon name="more" (click)="presentActionSheet(item)"></ion-icon>
     </ion-item>
 
@@ -121,13 +139,14 @@
 
     <ion-item lines="none" (click)="release(item, popular)" *ngFor="let item of popular">
       <ion-thumbnail slot="start">
-        <img [src]="item.imgSrc" [alt]="item.title">
+        <img *ngIf="item.img" [src]="item.img" [alt]="item.title">
+        <img *ngIf="!item.img" src="assets/nope.png" alt="">
       </ion-thumbnail>
       <ion-label>
-        <h2>{{ item.author }}</h2>
+        <h2>{{ item.artist }}</h2>
         <h3 class="text-muted">{{ item.title }}</h3>
       </ion-label>
-      <p class="track-time text-muted">{{ item.time }}</p>
+      <p class="track-time text-muted pl-5">{{ toHHMMSS(item.duration) }}</p>
       <ion-icon name="more" (click)="presentActionSheet(item)"></ion-icon>
     </ion-item>
 
@@ -141,15 +160,15 @@
     <div class="track-duration" [style.width]="(trackData['position'] / this.trackData['duration'] * 100)+'%'"></div>
     <ion-grid>
       <ion-row>
-        <ion-col class="icon" size="3" (click)="openModal([{id: 0}])">
+        <ion-col class="icon" size="2" (click)="openModal([{id: 0}])">
           <ion-icon name="arrow-dropup"></ion-icon>
         </ion-col>
         <ion-col class="text-center" (click)="openModal([{id: 0}])">
           <small *ngFor="let data of trackData['data']">
-           {{ data.author }}<br />
+           {{ data.artist }}<br />
             <small>{{ data.title }}</small></small>
         </ion-col>
-        <ion-col class="text-right icon" size="3" >
+        <ion-col class="text-right icon" size="2" >
           <ion-spinner name="crescent" color="secondary" *ngIf="trackData['status']<=1"></ion-spinner>
           <ion-icon name="pause" *ngIf="trackData['status']==2" (click)="pause()"></ion-icon>
           <ion-icon name="play" *ngIf="trackData['status']>2" (click)="play()"></ion-icon>

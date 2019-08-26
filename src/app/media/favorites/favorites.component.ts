@@ -83,6 +83,7 @@ export class FavoritesComponent implements OnInit, OnDestroy {
   trackData;
   slideShow;
   getTrackDataEvent;
+  radioPlaylists = [];
 
   @ViewChild(IonSearchbar) searchbar: IonSearchbar;
   @ViewChild(IonInfiniteScroll) infiniteScroll: IonInfiniteScroll;
@@ -129,7 +130,7 @@ export class FavoritesComponent implements OnInit, OnDestroy {
     let search = event.target.value.toLowerCase();
     this.filterSearch = search;
     if (search.length > 0) {
-      this.myTracksList = this.filterPipe.transform(this.myTracks, { author: search, title: search }, false);
+      this.myTracksList = this.filterPipe.transform(this.myTracks, { artist: search, title: search }, false);
     }
     else {
       this.myTracksList = this.myTracks;
@@ -166,7 +167,7 @@ export class FavoritesComponent implements OnInit, OnDestroy {
           text: 'Удалить',
           icon: 'trash',
           handler: () => {
-
+            this.removeFromFavorites(item);
           }
         },
         {
@@ -185,20 +186,7 @@ export class FavoritesComponent implements OnInit, OnDestroy {
     const alert = await this.alertController.create({
       header: 'Выберите плейлист',
       message: 'Выберите плейлист для добавления трека',
-      inputs: [
-        {
-          name: '1',
-          type: 'radio',
-          label: 'Плейлист 1',
-          value: '1'
-        },
-        {
-          name: '2',
-          type: 'radio',
-          label: 'Плейлист 2',
-          value: '2'
-        }
-      ],
+      inputs: this.radioPlaylists,
       buttons: [
         {
           text: 'Отмена',
@@ -250,30 +238,49 @@ export class FavoritesComponent implements OnInit, OnDestroy {
     await alert.present();
   }
 
-  //Добавление терка в плейлист
-  pushToPlaylist(item, id){
-    this.playlists.filter(x => x.id==id)[0].files.push({ id: item.id, author: item.author, title: item.title, time: item.time, imgSrc: item.imgSrc, src: item.src });
-    this.apiService.editPlatlist(id, this.playlists.filter(x => x.id==id))
-    .subscribe((Response) => {
-      console.log(Response);
-    });
+  //Добавление трека в плейлист
+  pushToPlaylist(item, id) {
+    if(!this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0]['files_detail']) {
+      this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0]['files_detail'] = [];
+    }
+    if(this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0]['files_detail'].filter(o => o.id == item.id).length==0) {
+      this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0]['files_detail'].push(item);
+    }
+
+    this.apiService.editPlatlist(id, this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0])
   }
 
   //Создание плейлиста
   addPlaylist(alertData) {
     if (alertData.title == '') { alertData.title = 'Новый плейлист'; }
-    this.apiService.addPlaylist(alertData.title)
-    .subscribe((Response) => {
-      console.log(Response);
-      this.playlists.push({ id: Response['id'], title: alertData.title, files: [], client: this.userData['id'] });
-      this.apiService.savePlaylist(this.playlists[0]);
-    });
+
+    let newData = this.apiService.addPlaylist(alertData.title)
+    if(newData['id']) {
+      this.playlists.push(newData);
+    }
+
     setTimeout(() => {
       this.slide.slideTo(this.playlists.length - 1);
     }, 100);
 
   }
 
+  removeFromFavorites(item){
+    const index: number = this.myTracks.indexOf(item);
+    console.log(index);
+    if (index !== -1) {
+      this.myTracks.splice(index, 1);
+      this.apiService.getFavoritesData()[0].myTracks.splice(index, 1);
+      this.storage.set('favoritesData', this.apiService.getFavoritesData());
+      if (this.virtualScroll) {
+        this.virtualScroll.checkRange(0);
+      }
+    }
+  }
+
+  toHHMMSS(unix_timestamp){
+    return this.apiService.toHHMMSS(unix_timestamp);
+  }
 
   ngOnInit() {
 
@@ -283,10 +290,15 @@ export class FavoritesComponent implements OnInit, OnDestroy {
       if (this.apiService.getAuth()) {
 
         if (this.apiService.getFavoritesData()[0].done) {
-          this.playlists = this.apiService.getFavoritesData()[0].playlists;
           this.myTracks = this.apiService.getFavoritesData()[0].myTracks;
           this.userData = this.apiService.getUserData();
           this.myTracksList = this.myTracks;
+
+          this.playlists = this.apiService.getFavoritesData()[0].playlists;
+
+          this.playlists.forEach((item) => {
+            this.radioPlaylists.push({name: item['id'], type: 'radio', label: item['title'],value: item['id']});
+          });
 
           if (this.virtualScroll) {
             this.virtualScroll.checkRange(0);
@@ -299,15 +311,6 @@ export class FavoritesComponent implements OnInit, OnDestroy {
       }
     });
 
-    let w81 = interval(100).subscribe(x => {
-      if (this.apiService.getAuth()) {
-        w81.unsubscribe();
-        this.apiService.getPlaylist(1)
-          .subscribe(Response => {
-            console.log(Response);
-          });
-      }
-    });
   }
 
   //Включение трека

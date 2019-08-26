@@ -163,6 +163,36 @@ export class PlaylistComponent implements OnInit, OnDestroy {
 
   }
 
+  async presentActionSheetTrack(item) {
+    event.stopPropagation();
+
+    const actionSheet = await this.actionSheetController.create({
+      buttons: [
+        {
+          text: 'Удалить',
+          icon: 'trash',
+          handler: () => {
+            const index: number = this.myTracksList.indexOf(item);
+            if (index !== -1) {
+              this.myTracksList.splice(index, 1);
+              this.virtualScroll.checkRange(0);
+            }
+
+            this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == this.playlist)[0].files_detail = this.myTracksList;
+            this.apiService.editPlatlist(this.playlist, this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == this.playlist)[0])
+          }
+        },
+        {
+          text: 'Отмена',
+          role: 'cancel',
+          handler: () => {
+
+          }
+        }]
+    });
+    await actionSheet.present();
+
+  }
 
   async presentAlert(id) {
     const alert = await this.alertController.create({
@@ -226,24 +256,26 @@ export class PlaylistComponent implements OnInit, OnDestroy {
     await alert.present();
   }
 
+  toHHMMSS(unix_timestamp){
+    return this.apiService.toHHMMSS(unix_timestamp);
+  }
 
   //Создание плейлиста
   addPlaylist(alertData) {
     if (alertData.title == '') { alertData.title = 'Новый плейлист'; }
-    this.playlists.push({ id: 0, title: alertData.title, files: [], imgSrc: 'assets/Rectangle 4.png' });
-    setTimeout(() => {
-      this.slide.slideTo(this.playlists.length - 1);
-    }, 100);
+
+    let newData = this.apiService.addPlaylist(alertData.title)
+    this.playlists.push(newData);
 
   }
 
   //Редактирование плейлиста
   editPlaylist(id, playlist) {
     if (playlist.title == '') { playlist.title = 'Новый плейлист'; }
-    this.playlists.filter(x => x.id == id)[0] = playlist;
-    this.playlist = playlist;
+
+    this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0]['title'] = playlist.title;
     this.title = playlist.title;
-    this.apiService.editPlatlist(id, playlist);
+    this.apiService.editPlatlist(id, this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0])
   }
 
   back() {
@@ -269,15 +301,18 @@ export class PlaylistComponent implements OnInit, OnDestroy {
     let w8 = interval(100).subscribe(x => {
       if (this.apiService.getAuth()) {
         if (this.playlist) {
-          if (this.apiService.getFavoritesData()[0].done) {
-
-            this.myTracksList = this.apiService.getFavoritesData()[0].playlists.filter((x) => x.id == this.playlist)[0].files;
-            this.myTracks = this.myTracksList.files;
+          if (this.apiService.getFavoritesData()[0].done && this.apiService.getFavoritesData()[0].playlists.filter((x) => x.id == this.playlist)[0]) {
+            if(!this.apiService.getFavoritesData()[0].playlists.filter((x) => x.id == this.playlist)[0].files_detail) {
+              this.apiService.getFavoritesData()[0].playlists.filter((x) => x.id == this.playlist)[0].files_detail = [];
+            }
+            this.myTracksList = this.apiService.getFavoritesData()[0].playlists.filter((x) => x.id == this.playlist)[0].files_detail;
+            this.myTracks = this.myTracksList.files_detail;
 
             this.title = this.apiService.getFavoritesData()[0].playlists.filter((x) => x.id == this.playlist)[0].title;
 
             this.events.publish('stopLoading');
             w8.unsubscribe();
+
           }
         }
         else {

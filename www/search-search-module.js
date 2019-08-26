@@ -14,12 +14,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm5/router.js");
 /* harmony import */ var _ionic_angular__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @ionic/angular */ "./node_modules/@ionic/angular/dist/fesm5.js");
 /* harmony import */ var _ionic_storage__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @ionic/storage */ "./node_modules/@ionic/storage/fesm5/ionic-storage.js");
-/* harmony import */ var _shared_services_api_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../shared/services/api.service */ "./src/app/media/shared/services/api.service.ts");
-/* harmony import */ var _angular_animations__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @angular/animations */ "./node_modules/@angular/animations/fesm5/animations.js");
-/* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/fesm5/common.js");
-/* harmony import */ var _angular_common_locales_ru__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @angular/common/locales/ru */ "./node_modules/@angular/common/locales/ru.js");
-/* harmony import */ var _angular_common_locales_ru__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(_angular_common_locales_ru__WEBPACK_IMPORTED_MODULE_7__);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm5/index.js");
+/* harmony import */ var _shared_pipes_filter_pipe__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../shared/pipes/filter.pipe */ "./src/app/media/shared/pipes/filter.pipe.ts");
+/* harmony import */ var _shared_services_api_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../shared/services/api.service */ "./src/app/media/shared/services/api.service.ts");
+/* harmony import */ var _angular_animations__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @angular/animations */ "./node_modules/@angular/animations/fesm5/animations.js");
+/* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @angular/common */ "./node_modules/@angular/common/fesm5/common.js");
+/* harmony import */ var _angular_common_locales_ru__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @angular/common/locales/ru */ "./node_modules/@angular/common/locales/ru.js");
+/* harmony import */ var _angular_common_locales_ru__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(_angular_common_locales_ru__WEBPACK_IMPORTED_MODULE_8__);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! rxjs */ "./node_modules/rxjs/_esm5/index.js");
 var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -73,8 +74,9 @@ var __generator = (undefined && undefined.__generator) || function (thisArg, bod
 
 
 
+
 var SearchComponent = /** @class */ (function () {
-    function SearchComponent(events, route, router, apiService, platform, actionSheetController, alertController, storage) {
+    function SearchComponent(events, route, router, apiService, platform, actionSheetController, alertController, filterPipe, storage) {
         this.events = events;
         this.route = route;
         this.router = router;
@@ -82,6 +84,7 @@ var SearchComponent = /** @class */ (function () {
         this.platform = platform;
         this.actionSheetController = actionSheetController;
         this.alertController = alertController;
+        this.filterPipe = filterPipe;
         this.storage = storage;
         this.slideOpts = {
             zoom: false,
@@ -91,11 +94,12 @@ var SearchComponent = /** @class */ (function () {
             slidesPerColumnFill: 'row',
             speed: 400
         };
-        this.playlists = [];
-        this.searchList = [];
         this.news = [];
         this.popular = [];
-        Object(_angular_common__WEBPACK_IMPORTED_MODULE_6__["registerLocaleData"])(_angular_common_locales_ru__WEBPACK_IMPORTED_MODULE_7___default.a, 'ru');
+        this.radioPlaylists = [];
+        this.showMore = true;
+        this.limit = 100;
+        Object(_angular_common__WEBPACK_IMPORTED_MODULE_7__["registerLocaleData"])(_angular_common_locales_ru__WEBPACK_IMPORTED_MODULE_8___default.a, 'ru');
         this.slideOpts.spaceBetween = -window.innerWidth / 12;
         this.slideShow = true;
         //Эвент нажатия кнопки Назад
@@ -110,31 +114,69 @@ var SearchComponent = /** @class */ (function () {
             _this.slideShow = true;
         }, 100);
     };
+    //Подгрузка треков
+    SearchComponent.prototype.loadData = function (event) {
+        var _this = this;
+        this.apiService.searchTracks(this.limit, this.searchList.length, this.filterSearch)
+            .subscribe(function (Response) {
+            var myArr = [Response];
+            if (myArr[0].length < _this.limit) {
+                _this.showMore = false;
+            }
+            else {
+                _this.showMore = true;
+            }
+            myArr[0].forEach(function (item) {
+                _this.searchList.push(item);
+            });
+            if (_this.virtualScroll) {
+                _this.virtualScroll.checkEnd();
+                event.target.complete();
+            }
+        });
+    };
     //Поиск треков и плейлистов на сервере
     SearchComponent.prototype.onSearch = function (event) {
+        var _this = this;
         var search = event.target.value.toLowerCase();
         if (search.length > 0) {
             this.filterSearch = search;
-            this.playlists = [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', tracks: [{ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }], imgSrc: 'assets/Rectangle 4.png' }, { id: 2, title: 'Новый плейлист', tracks: [{ id: 1, author: 'Новый плейлист', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }], imgSrc: 'assets/Rectangle 4.png' }, { id: 3, title: 'Новый плейлист', tracks: [{ id: 1, author: 'Новый плейлист', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }, { id: 2, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' }], imgSrc: 'assets/Rectangle 4.png' }];
-            if (this.searchList.length > 5) {
-                this.searchList = [];
-            }
-            this.searchList.push({ id: 1, author: 'Armin van Buuren', title: 'Imagine (The remixes)', time: '04:49', imgSrc: 'assets/Rectangle 4.png' });
+            this.showLoading = true;
+            this.searchPlaylists = null;
+            this.searchList = null;
+            this.showMore = true;
+            this.searchPlaylists = this.filterPipe.transform(this.playlists, { artist: search, title: search }, false);
+            this.apiService.searchPlaylists(this.limit, 0, this.filterSearch)
+                .subscribe(function (Response) {
+                _this.searchPlaylists = Response;
+            });
+            this.apiService.searchTracks(this.limit, 0, this.filterSearch)
+                .subscribe(function (Response) {
+                var myArr = [Response];
+                _this.searchList = Response;
+                _this.showLoading = false;
+                if (myArr[0].length < _this.limit) {
+                    _this.showMore = false;
+                }
+                if (_this.virtualScroll) {
+                    _this.virtualScroll.checkRange(0);
+                }
+            });
         }
         else {
             this.searchList = [];
-            this.playlists = [];
+            this.searchPlaylists = [];
             this.filterSearch = false;
-        }
-        if (this.virtualScroll) {
-            this.virtualScroll.checkRange(0);
+            if (this.virtualScroll) {
+                this.virtualScroll.checkRange(0);
+            }
         }
     };
     //Включение трека
     SearchComponent.prototype.release = function (trackData, trackList) {
         var _this = this;
         this.events.publish('release', trackData, trackList);
-        this.getTrackDataEvent = Object(rxjs__WEBPACK_IMPORTED_MODULE_8__["interval"])(300).subscribe(function (x) {
+        this.getTrackDataEvent = Object(rxjs__WEBPACK_IMPORTED_MODULE_9__["interval"])(300).subscribe(function (x) {
             _this.trackData = _this.events.publish('getTrackData')[0];
             _this.track = _this.trackData['track'];
         });
@@ -166,6 +208,7 @@ var SearchComponent = /** @class */ (function () {
                                         text: 'В избранное',
                                         icon: 'heart',
                                         handler: function () {
+                                            _this.addToFavorite(item);
                                         }
                                     },
                                     {
@@ -206,20 +249,7 @@ var SearchComponent = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.alertController.create({
                             header: 'Выберите плейлист',
                             message: 'Выберите плейлист для добавления трека',
-                            inputs: [
-                                {
-                                    name: '1',
-                                    type: 'radio',
-                                    label: 'Плейлист 1',
-                                    value: '1'
-                                },
-                                {
-                                    name: '2',
-                                    type: 'radio',
-                                    label: 'Плейлист 2',
-                                    value: '2'
-                                }
-                            ],
+                            inputs: this.radioPlaylists,
                             buttons: [
                                 {
                                     text: 'Отмена',
@@ -245,21 +275,36 @@ var SearchComponent = /** @class */ (function () {
             });
         });
     };
-    //Добавление терка в плейлист
+    //Добавление трека в избранные
+    SearchComponent.prototype.addToFavorite = function (item) {
+        if (this.apiService.getFavoritesData()[0].myTracks.filter(function (o) { return o.id == item.id; }).length == 0) {
+            this.apiService.getFavoritesData()[0].myTracks.push(item);
+            this.storage.set('favoritesData', this.apiService.getFavoritesData());
+        }
+    };
+    //Добавление трека в плейлист
     SearchComponent.prototype.pushToPlaylist = function (item, id) {
-        this.playlists.filter(function (x) { return x.id == id; })[0].files.push({ id: item.id, author: item.author, title: item.title, time: item.time, imgSrc: item.imgSrc, src: item.src });
-        this.apiService.editPlatlist(id, this.playlists.filter(function (x) { return x.id == id; }))
-            .subscribe(function (Response) {
-            console.log(Response);
-        });
+        if (!this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail']) {
+            this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail'] = [];
+        }
+        if (this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail'].filter(function (o) { return o.id == item.id; }).length == 0) {
+            this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail'].push(item);
+        }
+        this.apiService.editPlatlist(id, this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]);
+    };
+    SearchComponent.prototype.toHHMMSS = function (unix_timestamp) {
+        return this.apiService.toHHMMSS(unix_timestamp);
     };
     SearchComponent.prototype.ngOnInit = function () {
         var _this = this;
         this.trackData = this.events.publish('getTrackData')[0];
-        var w8 = Object(rxjs__WEBPACK_IMPORTED_MODULE_8__["interval"])(100).subscribe(function (x) {
+        var w8 = Object(rxjs__WEBPACK_IMPORTED_MODULE_9__["interval"])(100).subscribe(function (x) {
             if (_this.apiService.getAuth()) {
                 if (_this.apiService.getFavoritesData()[0].done) {
                     _this.playlists = _this.apiService.getFavoritesData()[0].playlists;
+                    _this.playlists.forEach(function (item) {
+                        _this.radioPlaylists.push({ name: item['id'], type: 'radio', label: item['title'], value: item['id'] });
+                    });
                 }
                 if (_this.apiService.getNewsData()[0].done) {
                     _this.news = _this.apiService.getNewsData()[0].news;
@@ -302,37 +347,38 @@ var SearchComponent = /** @class */ (function () {
         Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Component"])({
             selector: 'app-search',
             template: __webpack_require__(/*! ./search.html */ "./src/app/media/search/search.html"),
+            providers: [_shared_pipes_filter_pipe__WEBPACK_IMPORTED_MODULE_4__["FilterPipe"]],
             animations: [
-                Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["trigger"])('FadeIn', [
-                    Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["transition"])(':enter', [
-                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["style"])({ transform: 'translatey(0%)', opacity: 0 }),
-                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["animate"])('.3s ease-in-out', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["style"])({ transform: 'translatey(0%)', opacity: 1 }))
+                Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["trigger"])('FadeIn', [
+                    Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["transition"])(':enter', [
+                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ transform: 'translatey(0%)', opacity: 0 }),
+                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["animate"])('.3s ease-in-out', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ transform: 'translatey(0%)', opacity: 1 }))
                     ])
                 ]),
-                Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["trigger"])('SlideLeft', [
-                    Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["transition"])(':enter', [
-                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["style"])({ transform: 'translatex(50%)', opacity: 0 }),
-                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["animate"])('.5s ease-in-out', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["style"])({ transform: 'translatex(0%)', opacity: 1 }))
+                Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["trigger"])('SlideLeft', [
+                    Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["transition"])(':enter', [
+                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ transform: 'translatex(50%)', opacity: 0 }),
+                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["animate"])('.5s ease-in-out', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ transform: 'translatex(0%)', opacity: 1 }))
                     ]),
-                    Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["transition"])(':leave', [
-                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["style"])({ transform: 'translatex(0%)', opacity: 1 }),
-                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["animate"])('0.3s ease-in-out', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["style"])({ transform: 'translatex(50%)', opacity: 0 }))
+                    Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["transition"])(':leave', [
+                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ transform: 'translatex(0%)', opacity: 1 }),
+                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["animate"])('0.3s ease-in-out', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ transform: 'translatex(50%)', opacity: 0 }))
                     ])
                 ]),
-                Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["trigger"])('SlideUp', [
-                    Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["transition"])(':leave', [
-                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["style"])({ transform: 'translatey(0%)', opacity: 1 }),
-                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["animate"])('0.5s ease-in-out', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["style"])({ transform: 'translatey(50%)', opacity: 0 }))
+                Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["trigger"])('SlideUp', [
+                    Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["transition"])(':leave', [
+                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ transform: 'translatey(0%)', opacity: 1 }),
+                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["animate"])('0.5s ease-in-out', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ transform: 'translatey(50%)', opacity: 0 }))
                     ])
                 ]),
-                Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["trigger"])('SlideRight', [
-                    Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["transition"])(':enter', [
-                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["style"])({ transform: 'translatey(50%)', opacity: 0 }),
-                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["animate"])('1s ease-in-out', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["style"])({ transform: 'translatey(0%)', opacity: 1 }))
+                Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["trigger"])('SlideRight', [
+                    Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["transition"])(':enter', [
+                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ transform: 'translatey(50%)', opacity: 0 }),
+                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["animate"])('1s ease-in-out', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ transform: 'translatey(0%)', opacity: 1 }))
                     ]),
-                    Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["transition"])(':leave', [
-                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["style"])({ transform: 'translatex(0%)', opacity: 1 }),
-                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["animate"])('0.5s ease-in-out', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_5__["style"])({ transform: 'translatex(-50%)', opacity: 0 }))
+                    Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["transition"])(':leave', [
+                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ transform: 'translatex(0%)', opacity: 1 }),
+                        Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["animate"])('0.5s ease-in-out', Object(_angular_animations__WEBPACK_IMPORTED_MODULE_6__["style"])({ transform: 'translatex(-50%)', opacity: 0 }))
                     ])
                 ])
             ],
@@ -341,10 +387,11 @@ var SearchComponent = /** @class */ (function () {
         __metadata("design:paramtypes", [_ionic_angular__WEBPACK_IMPORTED_MODULE_2__["Events"],
             _angular_router__WEBPACK_IMPORTED_MODULE_1__["ActivatedRoute"],
             _angular_router__WEBPACK_IMPORTED_MODULE_1__["Router"],
-            _shared_services_api_service__WEBPACK_IMPORTED_MODULE_4__["ApiService"],
+            _shared_services_api_service__WEBPACK_IMPORTED_MODULE_5__["ApiService"],
             _ionic_angular__WEBPACK_IMPORTED_MODULE_2__["Platform"],
             _ionic_angular__WEBPACK_IMPORTED_MODULE_2__["ActionSheetController"],
             _ionic_angular__WEBPACK_IMPORTED_MODULE_2__["AlertController"],
+            _shared_pipes_filter_pipe__WEBPACK_IMPORTED_MODULE_4__["FilterPipe"],
             _ionic_storage__WEBPACK_IMPORTED_MODULE_3__["Storage"]])
     ], SearchComponent);
     return SearchComponent;
@@ -361,7 +408,7 @@ var SearchComponent = /** @class */ (function () {
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-module.exports = "<ion-header>\r\n  <ion-toolbar color=\"secondary\">\r\n<ion-buttons>\r\n    <ion-row>\r\n        <ion-col class=\"active\">\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"headset\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"bookmarks\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"mail\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"text\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"person\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n      </ion-row>\r\n</ion-buttons>\r\n\r\n  </ion-toolbar>\r\n\r\n\r\n</ion-header>\r\n\r\n<ion-content class=\"background\">\r\n\r\n  <h1 class=\"title\">Поиск</h1>\r\n\r\n  <div class=\"serach-bar\">\r\n    <ion-searchbar #searchbar debounce=\"500\" [@FadeIn] placeholder=\"Что вы ищите?\" clearIcon showCancelButton=\"always\" cancelButtonText=\"Закрыть\" (ionInput)=\"onSearch($event)\" (ionCancel)=\"toggleSearchbar(false)\" (keyup.enter)=\"toggleSearchbar(false)\"></ion-searchbar>\r\n  </div>\r\n\r\n\r\n  <h1 class=\"title\" *ngIf=\"filterSearch\">Плейлисты\r\n<ion-badge color=\"white\">1</ion-badge></h1>\r\n\r\n<ion-slides #slide [options]=\"slideOpts\" approxItemHeight=\"50\" *ngIf=\"filterSearch && slideShow\" [@FadeIn]>\r\n    <ion-slide *ngFor=\"let item of playlists\" [routerLink]=\"['/media/search/playlist/'+item.id]\" routerDirection=\"forward\">\r\n      <img [src]=\"item.imgSrc\" [alt]=\"item.title\">\r\n      <h6 class=\"mt-5\" *ngIf=\"item.author\">{{ item.author }}<br /><small class=\"small text-muted\">{{ item.title }}</small></h6>\r\n      <h6 class=\"mt-5\" *ngIf=\"!item.author\">{{ item.title }}<br /><small class=\"small text-muted\">{{ item.tracks.length }} треков</small></h6>\r\n    </ion-slide>\r\n  </ion-slides>\r\n\r\n  <ion-list *ngIf=\"filterSearch\">\r\n      <ion-list-header class=\"mb-0\">\r\n        <h4 class=\"strong\">Найдено</h4>\r\n      </ion-list-header>\r\n\r\n      <h6 class=\"text-center\" *ngIf=\"filterSearch && searchList && searchList.length==0\"><small>Пусто</small></h6>\r\n\r\n    <ion-virtual-scroll *ngIf=\"searchList.length>0\" [items]=\"searchList\" >\r\n      <div style=\"height: 70px;\" *virtualItem=\"let item;\">\r\n\r\n          <ion-list>\r\n\r\n            <ion-item lines=\"none\" (click)=\"release(item, searchList)\">\r\n              <ion-thumbnail slot=\"start\">\r\n                <img [src]=\"item.imgSrc\" [alt]=\"item.author + ' - ' + item.title\">\r\n              </ion-thumbnail>\r\n              <ion-label>\r\n                <h2>{{ item.author }}</h2>\r\n                <h3 class=\"text-muted\">{{ item.title }}</h3>\r\n              </ion-label>\r\n              <p class=\"track-time text-muted\">{{ item.time }}</p>\r\n              <ion-icon name=\"more\" (click)=\"presentActionSheet(item)\"></ion-icon>\r\n            </ion-item>\r\n\r\n\r\n          </ion-list>\r\n\r\n\r\n      </div>\r\n\r\n    </ion-virtual-scroll>\r\n</ion-list>\r\n\r\n  <ion-list *ngIf=\"!filterSearch\" class=\"mb-0\">\r\n    <ion-list-header class=\"mb-0\" [routerLink]=\"['/media/search/list/news/']\" routerDirection=\"forward\">\r\n      <h4 class=\"strong\">Новинки</h4>\r\n      <h3>\r\n        <ion-icon name=\"arrow-forward\"></ion-icon>\r\n      </h3>\r\n    </ion-list-header>\r\n\r\n    <ion-item lines=\"none\" (click)=\"release(item, news)\" *ngFor=\"let item of news\">\r\n      <ion-thumbnail slot=\"start\">\r\n        <img [src]=\"item.imgSrc\" [alt]=\"item.title\">\r\n      </ion-thumbnail>\r\n      <ion-label>\r\n        <h2>{{ item.author }}</h2>\r\n        <h3 class=\"text-muted\">{{ item.title }}</h3>\r\n      </ion-label>\r\n      <p class=\"track-time text-muted\">{{ item.time }}</p>\r\n      <ion-icon name=\"more\" (click)=\"presentActionSheet(item)\"></ion-icon>\r\n    </ion-item>\r\n\r\n  </ion-list>\r\n\r\n\r\n  <ion-list *ngIf=\"!filterSearch\" class=\"mb-0\">\r\n    <ion-list-header class=\"mb-0\" [routerLink]=\"['/media/search/list/popular/']\" routerDirection=\"forward\">\r\n      <h4 class=\"strong\">Популярное</h4>\r\n      <h3>\r\n        <ion-icon name=\"arrow-forward\"></ion-icon>\r\n      </h3>\r\n    </ion-list-header>\r\n\r\n    <ion-item lines=\"none\" (click)=\"release(item, popular)\" *ngFor=\"let item of popular\">\r\n      <ion-thumbnail slot=\"start\">\r\n        <img [src]=\"item.imgSrc\" [alt]=\"item.title\">\r\n      </ion-thumbnail>\r\n      <ion-label>\r\n        <h2>{{ item.author }}</h2>\r\n        <h3 class=\"text-muted\">{{ item.title }}</h3>\r\n      </ion-label>\r\n      <p class=\"track-time text-muted\">{{ item.time }}</p>\r\n      <ion-icon name=\"more\" (click)=\"presentActionSheet(item)\"></ion-icon>\r\n    </ion-item>\r\n\r\n  </ion-list>\r\n\r\n  <br *ngIf=\"trackData['status']\">\r\n  <br *ngIf=\"trackData['status']\">\r\n\r\n\r\n  <div class=\"footer-media-info\" *ngIf=\"trackData['status']\">\r\n    <div class=\"track-duration\" [style.width]=\"(trackData['position'] / this.trackData['duration'] * 100)+'%'\"></div>\r\n    <ion-grid>\r\n      <ion-row>\r\n        <ion-col class=\"icon\" size=\"3\" (click)=\"openModal([{id: 0}])\">\r\n          <ion-icon name=\"arrow-dropup\"></ion-icon>\r\n        </ion-col>\r\n        <ion-col class=\"text-center\" (click)=\"openModal([{id: 0}])\">\r\n          <small *ngFor=\"let data of trackData['data']\">\r\n           {{ data.author }}<br />\r\n            <small>{{ data.title }}</small></small>\r\n        </ion-col>\r\n        <ion-col class=\"text-right icon\" size=\"3\" >\r\n          <ion-spinner name=\"crescent\" color=\"secondary\" *ngIf=\"trackData['status']<=1\"></ion-spinner>\r\n          <ion-icon name=\"pause\" *ngIf=\"trackData['status']==2\" (click)=\"pause()\"></ion-icon>\r\n          <ion-icon name=\"play\" *ngIf=\"trackData['status']>2\" (click)=\"play()\"></ion-icon>\r\n        </ion-col>\r\n      </ion-row>\r\n    </ion-grid>\r\n  </div>\r\n</ion-content>\r\n"
+module.exports = "<ion-header>\r\n  <ion-toolbar color=\"secondary\">\r\n<ion-buttons>\r\n    <ion-row>\r\n        <ion-col class=\"active\">\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"headset\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"bookmarks\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"mail\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"text\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"person\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n      </ion-row>\r\n</ion-buttons>\r\n\r\n  </ion-toolbar>\r\n\r\n\r\n</ion-header>\r\n\r\n<ion-content class=\"background\">\r\n\r\n  <h1 class=\"title\">Поиск</h1>\r\n\r\n  <div class=\"serach-bar\">\r\n    <ion-searchbar #searchbar debounce=\"500\" [@FadeIn] placeholder=\"Что вы ищите?\" clearIcon showCancelButton=\"always\" cancelButtonText=\"Закрыть\" (ionChange)=\"onSearch($event)\" (ionCancel)=\"toggleSearchbar(false)\" (keyup.enter)=\"toggleSearchbar(false)\"></ion-searchbar>\r\n  </div>\r\n\r\n\r\n  <h1 class=\"title\" *ngIf=\"filterSearch && searchPlaylists &&  searchPlaylists.length>0\">Плейлисты\r\n<ion-badge color=\"white\">1</ion-badge></h1>\r\n\r\n<ion-slides #slide [options]=\"slideOpts\" approxItemHeight=\"50\" *ngIf=\"filterSearch && searchPlaylists && searchPlaylists.length\" [@FadeIn]>\r\n    <ion-slide *ngFor=\"let item of searchPlaylists\" [routerLink]=\"['/media/search/playlist/'+item.id]\" routerDirection=\"forward\">\r\n      <img *ngIf=\"item.img\" [src]=\"item.img\" [alt]=\"item.title\">\r\n      <img *ngIf=\"!item.img\" src=\"assets/nope.png\" alt=\"\">\r\n      <h6 class=\"mt-5\" *ngIf=\"item.artist\">{{ item.artist }}<br /><small class=\"small text-muted\">{{ item.title }}</small></h6>\r\n      <h6 class=\"mt-5\" *ngIf=\"!item.artist\">{{ item.title }}<br /><small class=\"small text-muted\" *ngIf=\"item.files_detail\">{{ item.files_detail.length }} треков</small></h6>\r\n    </ion-slide>\r\n  </ion-slides>\r\n\r\n  <div padding *ngIf=\"showLoading\">\r\n      <ion-progress-bar  type=\"indeterminate\" color=\"secondary\" ></ion-progress-bar>\r\n  </div>\r\n\r\n  <ion-list *ngIf=\"filterSearch\">\r\n\r\n\r\n      <ion-list-header class=\"mb-0\" *ngIf=\"searchList && searchList.length>0\">\r\n        <h4 class=\"strong\">Найдено</h4>\r\n      </ion-list-header>\r\n\r\n      <h6 class=\"text-center\" *ngIf=\"filterSearch && searchList && searchList.length==0\"><small>Пусто</small></h6>\r\n\r\n    <ion-virtual-scroll *ngIf=\"searchList && searchList.length>0\" [items]=\"searchList\" >\r\n      <div style=\"height: 70px;\" *virtualItem=\"let item;\">\r\n\r\n          <ion-list>\r\n\r\n            <ion-item lines=\"none\" (click)=\"release(item, searchList)\">\r\n              <ion-thumbnail slot=\"start\">\r\n                <img *ngIf=\"item.img\" [src]=\"item.img\" [alt]=\"item.title\">\r\n                <img *ngIf=\"!item.img\" src=\"assets/nope.png\" alt=\"\">\r\n              </ion-thumbnail>\r\n              <ion-label>\r\n                <h2>{{ item.artist }}</h2>\r\n                <h3 class=\"text-muted\">{{ item.title }}</h3>\r\n              </ion-label>\r\n              <p class=\"track-time text-muted pl-5\">{{ toHHMMSS(item.duration) }}</p>\r\n              <ion-icon name=\"more\" (click)=\"presentActionSheet(item)\"></ion-icon>\r\n            </ion-item>\r\n\r\n\r\n          </ion-list>\r\n\r\n\r\n      </div>\r\n\r\n    </ion-virtual-scroll>\r\n\r\n    <ion-infinite-scroll *ngIf=\"filterSearch && searchList && searchList.length>0 && showMore\" (ionInfinite)=\"loadData($event)\">\r\n      <ion-infinite-scroll-content loadingSpinner=\"dots\">\r\n      </ion-infinite-scroll-content>\r\n    </ion-infinite-scroll>\r\n\r\n\r\n\r\n\r\n</ion-list>\r\n\r\n  <ion-list *ngIf=\"!filterSearch\" class=\"mb-0\">\r\n    <ion-list-header class=\"mb-0\" [routerLink]=\"['/media/search/list/news/']\" routerDirection=\"forward\">\r\n      <h4 class=\"strong\">Новинки</h4>\r\n      <h3>\r\n        <ion-icon name=\"arrow-forward\"></ion-icon>\r\n      </h3>\r\n    </ion-list-header>\r\n\r\n    <ion-item lines=\"none\" (click)=\"release(item, news)\" *ngFor=\"let item of news\">\r\n      <ion-thumbnail slot=\"start\">\r\n        <img *ngIf=\"item.img\" [src]=\"item.img\" [alt]=\"item.title\">\r\n        <img *ngIf=\"!item.img\" src=\"assets/nope.png\" alt=\"\">\r\n      </ion-thumbnail>\r\n      <ion-label>\r\n        <h2>{{ item.artist }}</h2>\r\n        <h3 class=\"text-muted\">{{ item.title }}</h3>\r\n      </ion-label>\r\n      <p class=\"track-time text-muted pl-5\">{{ toHHMMSS(item.duration) }}</p>\r\n      <ion-icon name=\"more\" (click)=\"presentActionSheet(item)\"></ion-icon>\r\n    </ion-item>\r\n\r\n  </ion-list>\r\n\r\n\r\n  <ion-list *ngIf=\"!filterSearch\" class=\"mb-0\">\r\n    <ion-list-header class=\"mb-0\" [routerLink]=\"['/media/search/list/popular/']\" routerDirection=\"forward\">\r\n      <h4 class=\"strong\">Популярное</h4>\r\n      <h3>\r\n        <ion-icon name=\"arrow-forward\"></ion-icon>\r\n      </h3>\r\n    </ion-list-header>\r\n\r\n    <ion-item lines=\"none\" (click)=\"release(item, popular)\" *ngFor=\"let item of popular\">\r\n      <ion-thumbnail slot=\"start\">\r\n        <img *ngIf=\"item.img\" [src]=\"item.img\" [alt]=\"item.title\">\r\n        <img *ngIf=\"!item.img\" src=\"assets/nope.png\" alt=\"\">\r\n      </ion-thumbnail>\r\n      <ion-label>\r\n        <h2>{{ item.artist }}</h2>\r\n        <h3 class=\"text-muted\">{{ item.title }}</h3>\r\n      </ion-label>\r\n      <p class=\"track-time text-muted pl-5\">{{ toHHMMSS(item.duration) }}</p>\r\n      <ion-icon name=\"more\" (click)=\"presentActionSheet(item)\"></ion-icon>\r\n    </ion-item>\r\n\r\n  </ion-list>\r\n\r\n  <br *ngIf=\"trackData['status']\">\r\n  <br *ngIf=\"trackData['status']\">\r\n\r\n\r\n  <div class=\"footer-media-info\" *ngIf=\"trackData['status']\">\r\n    <div class=\"track-duration\" [style.width]=\"(trackData['position'] / this.trackData['duration'] * 100)+'%'\"></div>\r\n    <ion-grid>\r\n      <ion-row>\r\n        <ion-col class=\"icon\" size=\"2\" (click)=\"openModal([{id: 0}])\">\r\n          <ion-icon name=\"arrow-dropup\"></ion-icon>\r\n        </ion-col>\r\n        <ion-col class=\"text-center\" (click)=\"openModal([{id: 0}])\">\r\n          <small *ngFor=\"let data of trackData['data']\">\r\n           {{ data.artist }}<br />\r\n            <small>{{ data.title }}</small></small>\r\n        </ion-col>\r\n        <ion-col class=\"text-right icon\" size=\"2\" >\r\n          <ion-spinner name=\"crescent\" color=\"secondary\" *ngIf=\"trackData['status']<=1\"></ion-spinner>\r\n          <ion-icon name=\"pause\" *ngIf=\"trackData['status']==2\" (click)=\"pause()\"></ion-icon>\r\n          <ion-icon name=\"play\" *ngIf=\"trackData['status']>2\" (click)=\"play()\"></ion-icon>\r\n        </ion-col>\r\n      </ion-row>\r\n    </ion-grid>\r\n  </div>\r\n</ion-content>\r\n"
 
 /***/ }),
 

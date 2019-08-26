@@ -97,6 +97,7 @@ var FavoritesComponent = /** @class */ (function () {
         };
         this.playlists = [];
         this.myTracks = [];
+        this.radioPlaylists = [];
         this.playlist = this.route.snapshot.paramMap.get('playlist');
         Object(_angular_common__WEBPACK_IMPORTED_MODULE_7__["registerLocaleData"])(_angular_common_locales_ru__WEBPACK_IMPORTED_MODULE_8___default.a, 'ru');
         this.slideOpts.spaceBetween = -window.innerWidth / 12;
@@ -118,7 +119,7 @@ var FavoritesComponent = /** @class */ (function () {
         var search = event.target.value.toLowerCase();
         this.filterSearch = search;
         if (search.length > 0) {
-            this.myTracksList = this.filterPipe.transform(this.myTracks, { author: search, title: search }, false);
+            this.myTracksList = this.filterPipe.transform(this.myTracks, { artist: search, title: search }, false);
         }
         else {
             this.myTracksList = this.myTracks;
@@ -156,6 +157,7 @@ var FavoritesComponent = /** @class */ (function () {
                                         text: 'Удалить',
                                         icon: 'trash',
                                         handler: function () {
+                                            _this.removeFromFavorites(item);
                                         }
                                     },
                                     {
@@ -185,20 +187,7 @@ var FavoritesComponent = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.alertController.create({
                             header: 'Выберите плейлист',
                             message: 'Выберите плейлист для добавления трека',
-                            inputs: [
-                                {
-                                    name: '1',
-                                    type: 'radio',
-                                    label: 'Плейлист 1',
-                                    value: '1'
-                                },
-                                {
-                                    name: '2',
-                                    type: 'radio',
-                                    label: 'Плейлист 2',
-                                    value: '2'
-                                }
-                            ],
+                            inputs: this.radioPlaylists,
                             buttons: [
                                 {
                                     text: 'Отмена',
@@ -265,13 +254,15 @@ var FavoritesComponent = /** @class */ (function () {
             });
         });
     };
-    //Добавление терка в плейлист
+    //Добавление трека в плейлист
     FavoritesComponent.prototype.pushToPlaylist = function (item, id) {
-        this.playlists.filter(function (x) { return x.id == id; })[0].files.push({ id: item.id, author: item.author, title: item.title, time: item.time, imgSrc: item.imgSrc, src: item.src });
-        this.apiService.editPlatlist(id, this.playlists.filter(function (x) { return x.id == id; }))
-            .subscribe(function (Response) {
-            console.log(Response);
-        });
+        if (!this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail']) {
+            this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail'] = [];
+        }
+        if (this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail'].filter(function (o) { return o.id == item.id; }).length == 0) {
+            this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail'].push(item);
+        }
+        this.apiService.editPlatlist(id, this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]);
     };
     //Создание плейлиста
     FavoritesComponent.prototype.addPlaylist = function (alertData) {
@@ -279,15 +270,28 @@ var FavoritesComponent = /** @class */ (function () {
         if (alertData.title == '') {
             alertData.title = 'Новый плейлист';
         }
-        this.apiService.addPlaylist(alertData.title)
-            .subscribe(function (Response) {
-            console.log(Response);
-            _this.playlists.push({ id: 1, title: alertData.title, files: [], client: _this.userData['id'] });
-            _this.apiService.savePlaylist(_this.playlists[0]);
-        });
+        var newData = this.apiService.addPlaylist(alertData.title);
+        if (newData['id']) {
+            this.playlists.push(newData);
+        }
         setTimeout(function () {
             _this.slide.slideTo(_this.playlists.length - 1);
         }, 100);
+    };
+    FavoritesComponent.prototype.removeFromFavorites = function (item) {
+        var index = this.myTracks.indexOf(item);
+        console.log(index);
+        if (index !== -1) {
+            this.myTracks.splice(index, 1);
+            this.apiService.getFavoritesData()[0].myTracks.splice(index, 1);
+            this.storage.set('favoritesData', this.apiService.getFavoritesData());
+            if (this.virtualScroll) {
+                this.virtualScroll.checkRange(0);
+            }
+        }
+    };
+    FavoritesComponent.prototype.toHHMMSS = function (unix_timestamp) {
+        return this.apiService.toHHMMSS(unix_timestamp);
     };
     FavoritesComponent.prototype.ngOnInit = function () {
         var _this = this;
@@ -295,25 +299,19 @@ var FavoritesComponent = /** @class */ (function () {
         var w8 = Object(rxjs__WEBPACK_IMPORTED_MODULE_9__["interval"])(100).subscribe(function (x) {
             if (_this.apiService.getAuth()) {
                 if (_this.apiService.getFavoritesData()[0].done) {
-                    _this.playlists = _this.apiService.getFavoritesData()[0].playlists;
                     _this.myTracks = _this.apiService.getFavoritesData()[0].myTracks;
                     _this.userData = _this.apiService.getUserData();
                     _this.myTracksList = _this.myTracks;
+                    _this.playlists = _this.apiService.getFavoritesData()[0].playlists;
+                    _this.playlists.forEach(function (item) {
+                        _this.radioPlaylists.push({ name: item['id'], type: 'radio', label: item['title'], value: item['id'] });
+                    });
                     if (_this.virtualScroll) {
                         _this.virtualScroll.checkRange(0);
                     }
                     _this.events.publish('stopLoading');
                     w8.unsubscribe();
                 }
-            }
-        });
-        var w81 = Object(rxjs__WEBPACK_IMPORTED_MODULE_9__["interval"])(100).subscribe(function (x) {
-            if (_this.apiService.getAuth()) {
-                w81.unsubscribe();
-                _this.apiService.getPlaylist(1)
-                    .subscribe(function (Response) {
-                    console.log(Response);
-                });
             }
         });
     };
@@ -429,7 +427,7 @@ var FavoritesComponent = /** @class */ (function () {
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-module.exports = "<ion-header>\r\n  <ion-toolbar color=\"secondary\">\r\n<ion-buttons>\r\n    <ion-row>\r\n        <ion-col class=\"active\">\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"headset\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"bookmarks\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"mail\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"text\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"person\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n      </ion-row>\r\n</ion-buttons>\r\n\r\n  </ion-toolbar>\r\n\r\n\r\n</ion-header>\r\n\r\n<ion-content class=\"background\">\r\n\r\n  <h1 class=\"title\"><span [routerLink]=\"['/media/favorites/playlist/']\" routerDirection=\"forward\">Плейлисты</span>\r\n    <ion-icon (click)=\"presentAlert()\" class=\"float-right mr-20\" name=\"add-circle-outline\"></ion-icon>\r\n  </h1>\r\n\r\n    <!-- <h6 class=\"text-center\" *ngIf=\"playlists && playlists.length==0\"><small>Пусто</small></h6> -->\r\n\r\n  <ion-slides #slide [options]=\"slideOpts\" approxItemHeight=\"50\" *ngIf=\"slideShow\" [@FadeIn]>\r\n      <ion-slide *ngFor=\"let item of playlists\" [routerLink]=\"['/media/favorites/playlist/'+item.id]\" routerDirection=\"forward\">\r\n        <img *ngIf=\"item.imgSrc\" [src]=\"item.imgSrc\" [alt]=\"item.title\">\r\n        <img *ngIf=\"!item.imgSrc\" src=\"assets/nope.png\" alt=\"\">\r\n        <h6 class=\"mt-5\" *ngIf=\"item.author\">{{ item.author }}<br /><small class=\"small text-muted\">{{ item.title }}</small></h6>\r\n        <h6 class=\"mt-5\" *ngIf=\"!item.author\">{{ item.title }}<br /><small *ngIf=\"item.files\" class=\"small text-muted\">{{ item.files.length }} треков</small></h6>\r\n      </ion-slide>\r\n    </ion-slides>\r\n<!--\r\n    <div class=\"text-center\">\r\n      <ion-button color=\"light\" shape=\"round\" size=\"small\">Показать все ...</ion-button>\r\n    </div> -->\r\n\r\n  <ion-list>\r\n\r\n    <ion-list-header class=\"mb-m10\">\r\n      <h4 class=\"strong\">Мои треки</h4>\r\n    </ion-list-header>\r\n\r\n    <div class=\"serach-bar\" *ngIf=\"myTracks && myTracks.length>0\">\r\n      <ion-searchbar #searchbar [@FadeIn] placeholder=\"Поиск\" clearIcon showCancelButton=\"always\" cancelButtonText=\"Закрыть\" (ionInput)=\"onSearch($event)\" (ionCancel)=\"toggleSearchbar(false)\" (keyup.enter)=\"toggleSearchbar(false)\"></ion-searchbar>\r\n    </div>\r\n\r\n  <!-- <h6 class=\"text-center\" *ngIf=\"myTracksList && myTracksList.length==0\"><small>Пусто</small></h6> -->\r\n\r\n    <ion-virtual-scroll *ngIf=\"myTracksList && myTracksList.length>0\" [items]=\"myTracksList\">\r\n      <div style=\"height: 70px;\" *virtualItem=\"let item;\">\r\n\r\n          <ion-list>\r\n\r\n            <ion-item lines=\"none\" (click)=\"release(item, myTracksList)\">\r\n              <ion-thumbnail slot=\"start\">\r\n                <img [src]=\"item.imgSrc\" [alt]=\"item.author + ' - ' + item.title\">\r\n              </ion-thumbnail>\r\n              <ion-label>\r\n                <h2>{{ item.author }}</h2>\r\n                <h3 class=\"text-muted\">{{ item.title }}</h3>\r\n              </ion-label>\r\n              <p class=\"track-time text-muted\">{{ item.time }}</p>\r\n              <ion-icon name=\"more\" (click)=\"presentActionSheet(item)\"></ion-icon>\r\n            </ion-item>\r\n\r\n\r\n          </ion-list>\r\n\r\n\r\n      </div>\r\n\r\n    </ion-virtual-scroll>\r\n  </ion-list>\r\n\r\n  <br *ngIf=\"trackData['status']\">\r\n  <br *ngIf=\"trackData['status']\">\r\n\r\n    <div class=\"footer-media-info\" *ngIf=\"trackData['status']\">\r\n      <div class=\"track-duration\" [style.width]=\"(trackData['position'] / this.trackData['duration'] * 100)+'%'\"></div>\r\n      <ion-grid>\r\n        <ion-row>\r\n          <ion-col class=\"icon\" size=\"3\" (click)=\"openModal([{id: 0}])\">\r\n            <ion-icon name=\"arrow-dropup\"></ion-icon>\r\n          </ion-col>\r\n          <ion-col class=\"text-center\" (click)=\"openModal([{id: 0}])\">\r\n            <small *ngFor=\"let data of trackData['data']\">\r\n             {{ data.author }}<br />\r\n              <small>{{ data.title }}</small></small>\r\n          </ion-col>\r\n          <ion-col class=\"text-right icon\" size=\"3\" >\r\n            <ion-spinner name=\"crescent\" color=\"secondary\" *ngIf=\"trackData['status']<=1\"></ion-spinner>\r\n            <ion-icon name=\"pause\" *ngIf=\"trackData['status']==2\" (click)=\"pause()\"></ion-icon>\r\n            <ion-icon name=\"play\" *ngIf=\"trackData['status']>2\" (click)=\"play()\"></ion-icon>\r\n          </ion-col>\r\n        </ion-row>\r\n      </ion-grid>\r\n    </div>\r\n</ion-content>\r\n"
+module.exports = "<ion-header>\r\n  <ion-toolbar color=\"secondary\">\r\n<ion-buttons>\r\n    <ion-row>\r\n        <ion-col class=\"active\">\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"headset\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"bookmarks\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"mail\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"text\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"person\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n      </ion-row>\r\n</ion-buttons>\r\n\r\n  </ion-toolbar>\r\n\r\n\r\n</ion-header>\r\n\r\n<ion-content class=\"background\">\r\n\r\n  <h1 class=\"title\"><span [routerLink]=\"['/media/favorites/playlist/']\" routerDirection=\"forward\">Плейлисты</span>\r\n    <ion-icon (click)=\"presentAlert()\" class=\"float-right mr-20\" name=\"add-circle-outline\"></ion-icon>\r\n  </h1>\r\n\r\n    <!-- <h6 class=\"text-center\" *ngIf=\"playlists && playlists.length==0\"><small>Пусто</small></h6> -->\r\n\r\n  <ion-slides #slide [options]=\"slideOpts\" approxItemHeight=\"50\" *ngIf=\"slideShow\" [@FadeIn]>\r\n      <ion-slide *ngFor=\"let item of playlists\" [routerLink]=\"['/media/favorites/playlist/'+item.id]\" routerDirection=\"forward\">\r\n        <img *ngIf=\"item.img\" [src]=\"item.img\" [alt]=\"item.title\">\r\n        <img *ngIf=\"!item.img\" src=\"assets/nope.png\" alt=\"\">\r\n        <h6 class=\"mt-5\" *ngIf=\"item.artist\">{{ item.artist }}<br /><small class=\"small text-muted\">{{ item.title }}</small></h6>\r\n        <h6 class=\"mt-5\" *ngIf=\"!item.artist\">{{ item.title }}<br /><small *ngIf=\"item.files_detail\" class=\"small text-muted\">{{ item.files_detail.length }} треков</small></h6>\r\n      </ion-slide>\r\n    </ion-slides>\r\n<!--\r\n    <div class=\"text-center\">\r\n      <ion-button color=\"light\" shape=\"round\" size=\"small\">Показать все ...</ion-button>\r\n    </div> -->\r\n\r\n  <ion-list>\r\n\r\n    <ion-list-header class=\"mb-m10\">\r\n      <h4 class=\"strong\">Мои треки</h4>\r\n    </ion-list-header>\r\n\r\n    <div class=\"serach-bar\" *ngIf=\"myTracks && myTracks.length>0\">\r\n      <ion-searchbar #searchbar [@FadeIn] placeholder=\"Поиск\" clearIcon showCancelButton=\"always\" cancelButtonText=\"Закрыть\" (ionInput)=\"onSearch($event)\" (ionCancel)=\"toggleSearchbar(false)\" (keyup.enter)=\"toggleSearchbar(false)\"></ion-searchbar>\r\n    </div>\r\n\r\n  <!-- <h6 class=\"text-center\" *ngIf=\"myTracksList && myTracksList.length==0\"><small>Пусто</small></h6> -->\r\n\r\n    <ion-virtual-scroll *ngIf=\"myTracksList && myTracksList.length>0\" [items]=\"myTracksList\">\r\n      <div style=\"height: 70px;\" *virtualItem=\"let item;\">\r\n\r\n          <ion-list>\r\n\r\n            <ion-item lines=\"none\" (click)=\"release(item, myTracksList)\">\r\n              <ion-thumbnail slot=\"start\">\r\n                  <img *ngIf=\"item.img\" [src]=\"item.img\" [alt]=\"item.title\">\r\n                  <img *ngIf=\"!item.img\" src=\"assets/nope.png\" alt=\"\">\r\n              </ion-thumbnail>\r\n              <ion-label>\r\n                <h2>{{ item.artist }}</h2>\r\n                <h3 class=\"text-muted\">{{ item.title }}</h3>\r\n              </ion-label>\r\n              <p class=\"track-time text-muted pl-5\">{{ toHHMMSS(item.duration) }}</p>\r\n              <ion-icon name=\"more\" (click)=\"presentActionSheet(item)\"></ion-icon>\r\n            </ion-item>\r\n\r\n\r\n          </ion-list>\r\n\r\n\r\n      </div>\r\n\r\n    </ion-virtual-scroll>\r\n  </ion-list>\r\n\r\n  <br *ngIf=\"trackData['status']\">\r\n  <br *ngIf=\"trackData['status']\">\r\n\r\n    <div class=\"footer-media-info\" *ngIf=\"trackData['status']\">\r\n      <div class=\"track-duration\" [style.width]=\"(trackData['position'] / this.trackData['duration'] * 100)+'%'\"></div>\r\n      <ion-grid>\r\n        <ion-row>\r\n          <ion-col class=\"icon\" size=\"2\" (click)=\"openModal([{id: 0}])\">\r\n            <ion-icon name=\"arrow-dropup\"></ion-icon>\r\n          </ion-col>\r\n          <ion-col class=\"text-center\" (click)=\"openModal([{id: 0}])\">\r\n            <small *ngFor=\"let data of trackData['data']\">\r\n             {{ data.artist }}<br />\r\n              <small>{{ data.title }}</small></small>\r\n          </ion-col>\r\n          <ion-col class=\"text-right icon\" size=\"2\" >\r\n            <ion-spinner name=\"crescent\" color=\"secondary\" *ngIf=\"trackData['status']<=1\"></ion-spinner>\r\n            <ion-icon name=\"pause\" *ngIf=\"trackData['status']==2\" (click)=\"pause()\"></ion-icon>\r\n            <ion-icon name=\"play\" *ngIf=\"trackData['status']>2\" (click)=\"play()\"></ion-icon>\r\n          </ion-col>\r\n        </ion-row>\r\n      </ion-grid>\r\n    </div>\r\n</ion-content>\r\n"
 
 /***/ }),
 

@@ -95,6 +95,7 @@ var NewsComponent = /** @class */ (function () {
         this.popular = [];
         this.playlists = [];
         this.contentShow = true;
+        this.radioPlaylists = [];
         Object(_angular_common__WEBPACK_IMPORTED_MODULE_6__["registerLocaleData"])(_angular_common_locales_ru__WEBPACK_IMPORTED_MODULE_7___default.a, 'ru');
         this.slideOpts.spaceBetween = -window.innerWidth + 300;
         this.slideShow = true;
@@ -140,6 +141,7 @@ var NewsComponent = /** @class */ (function () {
                                         text: 'В избранное',
                                         icon: 'heart',
                                         handler: function () {
+                                            _this.addToFavorite(item);
                                         }
                                     },
                                     {
@@ -180,20 +182,7 @@ var NewsComponent = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.alertController.create({
                             header: 'Выберите плейлист',
                             message: 'Выберите плейлист для добавления трека',
-                            inputs: [
-                                {
-                                    name: '1',
-                                    type: 'radio',
-                                    label: 'Плейлист 1',
-                                    value: '1'
-                                },
-                                {
-                                    name: '2',
-                                    type: 'radio',
-                                    label: 'Плейлист 2',
-                                    value: '2'
-                                }
-                            ],
+                            inputs: this.radioPlaylists,
                             buttons: [
                                 {
                                     text: 'Отмена',
@@ -219,13 +208,25 @@ var NewsComponent = /** @class */ (function () {
             });
         });
     };
-    //Добавление терка в плейлист
+    //Добавление трека в избранные
+    NewsComponent.prototype.addToFavorite = function (item) {
+        if (this.apiService.getFavoritesData()[0].myTracks.filter(function (o) { return o.id == item.id; }).length == 0) {
+            this.apiService.getFavoritesData()[0].myTracks.push(item);
+            this.storage.set('favoritesData', this.apiService.getFavoritesData());
+        }
+    };
+    //Добавление трека в плейлист
     NewsComponent.prototype.pushToPlaylist = function (item, id) {
-        this.playlists.filter(function (x) { return x.id == id; })[0].files.push({ id: item.id, author: item.author, title: item.title, time: item.time, imgSrc: item.imgSrc, src: item.src });
-        this.apiService.editPlatlist(id, this.playlists.filter(function (x) { return x.id == id; }))
-            .subscribe(function (Response) {
-            console.log(Response);
-        });
+        if (!this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail']) {
+            this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail'] = [];
+        }
+        if (this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail'].filter(function (o) { return o.id == item.id; }).length == 0) {
+            this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]['files_detail'].push(item);
+        }
+        this.apiService.editPlatlist(id, this.apiService.getFavoritesData()[0].playlists.filter(function (x) { return x.id == id; })[0]);
+    };
+    NewsComponent.prototype.toHHMMSS = function (unix_timestamp) {
+        return this.apiService.toHHMMSS(unix_timestamp);
     };
     NewsComponent.prototype.ngOnInit = function () {
         var _this = this;
@@ -237,6 +238,9 @@ var NewsComponent = /** @class */ (function () {
             if (_this.apiService.getAuth()) {
                 if (_this.apiService.getFavoritesData()[0].done) {
                     _this.playlists = _this.apiService.getFavoritesData()[0].playlists;
+                    _this.playlists.forEach(function (item) {
+                        _this.radioPlaylists.push({ name: item['id'], type: 'radio', label: item['title'], value: item['id'] });
+                    });
                 }
                 if (_this.apiService.getNewsData()[0].done) {
                     _this.albums = _this.apiService.getNewsData()[0].albums;
@@ -332,7 +336,7 @@ var NewsComponent = /** @class */ (function () {
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-module.exports = "<ion-header>\r\n  <ion-toolbar color=\"secondary\">\r\n    <ion-buttons>\r\n      <ion-row>\r\n        <ion-col class=\"active\">\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"headset\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"bookmarks\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"mail\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"text\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"person\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n      </ion-row>\r\n    </ion-buttons>\r\n\r\n  </ion-toolbar>\r\n\r\n\r\n</ion-header>\r\n\r\n<ion-content class=\"background\">\r\n\r\n  <h1 class=\"title\">Музыка</h1>\r\n\r\n  <ion-slides [options]=\"slideOpts\" *ngIf=\"slideShow\" [@FadeIn]>\r\n    <ion-slide *ngFor=\"let item of albums\" [routerLink]=\"['/media/news/album/'+item.id]\" routerDirection=\"forward\">\r\n      <img [src]=\"item.imgSrc\" alt=\"\">\r\n      <h4 class=\"mt-5\">{{ item.author }}<br /><small>{{ item.title }}</small></h4>\r\n    </ion-slide>\r\n  </ion-slides>\r\n\r\n\r\n  <ion-list class=\"mb-0\">\r\n    <ion-list-header  class=\"mb-0\" [routerLink]=\"['/media/news/list/recommend/']\" routerDirection=\"forward\">\r\n      <h4 class=\"strong\" >Рекомендуем вам</h4>\r\n      <h3>\r\n        <ion-icon name=\"arrow-forward\"></ion-icon>\r\n      </h3>\r\n    </ion-list-header>\r\n<!--\r\n      <h6 class=\"text-center\" *ngIf=\"advise && advise.length==0\"><small>Пусто</small></h6> -->\r\n\r\n    <ion-item lines=\"none\" (click)=\"release(item, advise)\" *ngFor=\"let item of advise\">\r\n      <ion-thumbnail slot=\"start\">\r\n        <img [src]=\"item.imgSrc\" [alt]=\"item.title\">\r\n      </ion-thumbnail>\r\n      <ion-label>\r\n        <h2>{{ item.author }}</h2>\r\n        <h3 class=\"text-muted\">{{ item.title }}</h3>\r\n      </ion-label>\r\n      <p class=\"track-time text-muted\">{{ item.time }}</p>\r\n      <ion-icon name=\"more\" (click)=\"presentActionSheet(item)\"></ion-icon>\r\n    </ion-item>\r\n\r\n  </ion-list>\r\n\r\n  <ion-list class=\"mb-0\">\r\n    <ion-list-header  class=\"mb-0\" [routerLink]=\"['/media/news/list/news/']\" routerDirection=\"forward\">\r\n      <h4 class=\"strong\">Новинки</h4>\r\n      <h3>\r\n        <ion-icon name=\"arrow-forward\"></ion-icon>\r\n      </h3>\r\n    </ion-list-header>\r\n\r\n          <!-- <h6 class=\"text-center\" *ngIf=\"news && news.length==0\"><small>Пусто</small></h6> -->\r\n\r\n    <ion-item lines=\"none\" (click)=\"release(item, news)\" *ngFor=\"let item of news\">\r\n      <ion-thumbnail slot=\"start\">\r\n        <img [src]=\"item.imgSrc\" [alt]=\"item.title\">\r\n      </ion-thumbnail>\r\n      <ion-label>\r\n        <h2>{{ item.author }}</h2>\r\n        <h3 class=\"text-muted\">{{ item.title }}</h3>\r\n      </ion-label>\r\n      <p class=\"track-time text-muted\">{{ item.time }}</p>\r\n      <ion-icon name=\"more\" (click)=\"presentActionSheet(item)\"></ion-icon>\r\n    </ion-item>\r\n\r\n  </ion-list>\r\n\r\n\r\n  <ion-list>\r\n    <ion-list-header  class=\"mb-0\" [routerLink]=\"['/media/news/list/popular/']\" routerDirection=\"forward\">\r\n      <h4 class=\"strong\" >Популярное</h4>\r\n      <h3>\r\n        <ion-icon name=\"arrow-forward\"></ion-icon>\r\n      </h3>\r\n    </ion-list-header>\r\n\r\n          <!-- <h6 class=\"text-center\" *ngIf=\"popular && popular.length==0\"><small>Пусто</small></h6> -->\r\n\r\n    <ion-item lines=\"none\" (click)=\"release(item, popular)\" *ngFor=\"let item of popular\">\r\n      <ion-thumbnail slot=\"start\">\r\n        <img [src]=\"item.imgSrc\" [alt]=\"item.title\">\r\n      </ion-thumbnail>\r\n      <ion-label>\r\n        <h2>{{ item.author }}</h2>\r\n        <h3 class=\"text-muted\">{{ item.title }}</h3>\r\n      </ion-label>\r\n      <p class=\"track-time text-muted\">{{ item.time }}</p>\r\n      <ion-icon name=\"more\" (click)=\"presentActionSheet(item)\"></ion-icon>\r\n    </ion-item>\r\n\r\n  </ion-list>\r\n\r\n  <br *ngIf=\"trackData['status']\">\r\n  <br *ngIf=\"trackData['status']\">\r\n\r\n\r\n  <div class=\"footer-media-info\" *ngIf=\"trackData['status']\">\r\n    <div class=\"track-duration\" [style.width]=\"(trackData['position'] / this.trackData['duration'] * 100)+'%'\"></div>\r\n    <ion-grid>\r\n      <ion-row>\r\n        <ion-col class=\"icon\" size=\"3\" (click)=\"openModal([{id: 0}])\">\r\n          <ion-icon name=\"arrow-dropup\"></ion-icon>\r\n        </ion-col>\r\n        <ion-col class=\"text-center\" (click)=\"openModal([{id: 0}])\">\r\n          <small *ngFor=\"let data of trackData['data']\">\r\n           {{ data.author }}<br />\r\n            <small>{{ data.title }}</small></small>\r\n        </ion-col>\r\n        <ion-col class=\"text-right icon\" size=\"3\" >\r\n          <ion-spinner name=\"crescent\" color=\"secondary\" *ngIf=\"trackData['status']<=1\"></ion-spinner>\r\n          <ion-icon name=\"pause\" *ngIf=\"trackData['status']==2\" (click)=\"pause()\"></ion-icon>\r\n          <ion-icon name=\"play\" *ngIf=\"trackData['status']>2\" (click)=\"play()\"></ion-icon>\r\n        </ion-col>\r\n      </ion-row>\r\n    </ion-grid>\r\n  </div>\r\n</ion-content>\r\n"
+module.exports = "<ion-header>\r\n  <ion-toolbar color=\"secondary\">\r\n    <ion-buttons>\r\n      <ion-row>\r\n        <ion-col class=\"active\">\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"headset\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"bookmarks\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"mail\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"text\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n        <ion-col>\r\n          <ion-button>\r\n            <ion-icon slot=\"icon-only\" name=\"person\"></ion-icon>\r\n          </ion-button>\r\n        </ion-col>\r\n      </ion-row>\r\n    </ion-buttons>\r\n\r\n  </ion-toolbar>\r\n\r\n\r\n</ion-header>\r\n\r\n<ion-content class=\"background\">\r\n\r\n  <h1 class=\"title\">Музыка</h1>\r\n\r\n  <ion-slides [options]=\"slideOpts\" *ngIf=\"slideShow\" [@FadeIn]>\r\n    <ion-slide *ngFor=\"let item of albums\" [routerLink]=\"['/media/news/album/'+item.id]\" routerDirection=\"forward\">\r\n        <img *ngIf=\"item.img\" [src]=\"item.img\" [alt]=\"item.title\">\r\n        <img *ngIf=\"!item.img\" src=\"assets/nope.png\" alt=\"\">\r\n      <h4 class=\"mt-5\">{{ item.artist }}<br /><small>{{ item.title }}</small></h4>\r\n    </ion-slide>\r\n  </ion-slides>\r\n\r\n\r\n  <ion-list class=\"mb-0\">\r\n    <ion-list-header  class=\"mb-0\" [routerLink]=\"['/media/news/list/recommend/']\" routerDirection=\"forward\">\r\n      <h4 class=\"strong\" >Рекомендуем вам</h4>\r\n      <h3>\r\n        <ion-icon name=\"arrow-forward\"></ion-icon>\r\n      </h3>\r\n    </ion-list-header>\r\n<!--\r\n      <h6 class=\"text-center\" *ngIf=\"advise && advise.length==0\"><small>Пусто</small></h6> -->\r\n\r\n    <ion-item lines=\"none\" (click)=\"release(item, advise)\" *ngFor=\"let item of advise\">\r\n      <ion-thumbnail slot=\"start\">\r\n          <img *ngIf=\"item.img\" [src]=\"item.img\" [alt]=\"item.title\">\r\n          <img *ngIf=\"!item.img\" src=\"assets/nope.png\" alt=\"\">\r\n      </ion-thumbnail>\r\n      <ion-label>\r\n        <h2>{{ item.artist }}</h2>\r\n        <h3 class=\"text-muted\">{{ item.title }}</h3>\r\n      </ion-label>\r\n      <p class=\"track-time text-muted pl-5\">{{ toHHMMSS(item.duration) }}</p>\r\n      <ion-icon name=\"more\" (click)=\"presentActionSheet(item)\"></ion-icon>\r\n    </ion-item>\r\n\r\n  </ion-list>\r\n\r\n  <ion-list class=\"mb-0\">\r\n    <ion-list-header  class=\"mb-0\" [routerLink]=\"['/media/news/list/news/']\" routerDirection=\"forward\">\r\n      <h4 class=\"strong\">Новинки</h4>\r\n      <h3>\r\n        <ion-icon name=\"arrow-forward\"></ion-icon>\r\n      </h3>\r\n    </ion-list-header>\r\n\r\n          <!-- <h6 class=\"text-center\" *ngIf=\"news && news.length==0\"><small>Пусто</small></h6> -->\r\n\r\n    <ion-item lines=\"none\" (click)=\"release(item, news)\" *ngFor=\"let item of news\">\r\n      <ion-thumbnail slot=\"start\">\r\n          <img *ngIf=\"item.img\" [src]=\"item.img\" [alt]=\"item.title\">\r\n          <img *ngIf=\"!item.img\" src=\"assets/nope.png\" alt=\"\">\r\n      </ion-thumbnail>\r\n      <ion-label>\r\n        <h2>{{ item.artist }}</h2>\r\n        <h3 class=\"text-muted\">{{ item.title }}</h3>\r\n      </ion-label>\r\n      <p class=\"track-time text-muted pl-5\">{{ toHHMMSS(item.duration) }}</p>\r\n      <ion-icon name=\"more\" (click)=\"presentActionSheet(item)\"></ion-icon>\r\n    </ion-item>\r\n\r\n  </ion-list>\r\n\r\n\r\n  <ion-list>\r\n    <ion-list-header  class=\"mb-0\" [routerLink]=\"['/media/news/list/popular/']\" routerDirection=\"forward\">\r\n      <h4 class=\"strong\" >Популярное</h4>\r\n      <h3>\r\n        <ion-icon name=\"arrow-forward\"></ion-icon>\r\n      </h3>\r\n    </ion-list-header>\r\n\r\n          <!-- <h6 class=\"text-center\" *ngIf=\"popular && popular.length==0\"><small>Пусто</small></h6> -->\r\n\r\n    <ion-item lines=\"none\" (click)=\"release(item, popular)\" *ngFor=\"let item of popular\">\r\n      <ion-thumbnail slot=\"start\">\r\n          <img *ngIf=\"item.img\" [src]=\"item.img\" [alt]=\"item.title\">\r\n          <img *ngIf=\"!item.img\" src=\"assets/nope.png\" alt=\"\">\r\n      </ion-thumbnail>\r\n      <ion-label>\r\n        <h2>{{ item.artist }}</h2>\r\n        <h3 class=\"text-muted\">{{ item.title }}</h3>\r\n      </ion-label>\r\n      <p class=\"track-time text-muted pl-5\">{{ toHHMMSS(item.duration) }}</p>\r\n      <ion-icon name=\"more\" (click)=\"presentActionSheet(item)\"></ion-icon>\r\n    </ion-item>\r\n\r\n  </ion-list>\r\n\r\n  <br *ngIf=\"trackData['status']\">\r\n  <br *ngIf=\"trackData['status']\">\r\n\r\n\r\n  <div class=\"footer-media-info\" *ngIf=\"trackData['status']\">\r\n    <div class=\"track-duration\" [style.width]=\"(trackData['position'] / this.trackData['duration'] * 100)+'%'\"></div>\r\n    <ion-grid>\r\n      <ion-row>\r\n        <ion-col class=\"icon\" size=\"2\" (click)=\"openModal([{id: 0}])\">\r\n          <ion-icon name=\"arrow-dropup\"></ion-icon>\r\n        </ion-col>\r\n        <ion-col class=\"text-center\" (click)=\"openModal([{id: 0}])\">\r\n          <small *ngFor=\"let data of trackData['data']\">\r\n           {{ data.artist }}<br />\r\n            <small>{{ data.title }}</small></small>\r\n        </ion-col>\r\n        <ion-col class=\"text-right icon\" size=\"2\" >\r\n          <ion-spinner name=\"crescent\" color=\"secondary\" *ngIf=\"trackData['status']<=1\"></ion-spinner>\r\n          <ion-icon name=\"pause\" *ngIf=\"trackData['status']==2\" (click)=\"pause()\"></ion-icon>\r\n          <ion-icon name=\"play\" *ngIf=\"trackData['status']>2\" (click)=\"play()\"></ion-icon>\r\n        </ion-col>\r\n      </ion-row>\r\n    </ion-grid>\r\n  </div>\r\n</ion-content>\r\n"
 
 /***/ }),
 

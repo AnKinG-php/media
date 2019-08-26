@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
-import { Events, Platform, ModalController, LoadingController, IonVirtualScroll, IonInfiniteScroll, IonSearchbar, ActionSheetController } from '@ionic/angular';
+import { Events, Platform, ModalController, LoadingController, IonVirtualScroll, IonInfiniteScroll, IonSearchbar, ActionSheetController, AlertController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { ApiService } from '../shared/services/api.service';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
@@ -48,6 +48,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   trackData = [{ data: [], status: 0, position: '', duration: '' }];
 
   trackList = [];
+  playlists = [];
 
   positionValue = 0;
   array = [];
@@ -56,6 +57,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   showBack;
   showButtons;
 
+  radioPlaylists = [];
 
   constructor(
     private platform: Platform,
@@ -63,6 +65,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
     private router: Router,
     private modal: ModalController,
     private actionSheetController: ActionSheetController,
+    private alertController: AlertController,
     private apiService: ApiService,
     private storage: Storage
   ) {
@@ -77,26 +80,24 @@ export class PlayerComponent implements OnInit, OnDestroy {
   }
 
   toHHMMSS(unix_timestamp) {
-    if (unix_timestamp > 0) {
-      var date = new Date(unix_timestamp * 1000);
-      var minutes = "0" + date.getMinutes();
-      var seconds = "0" + date.getSeconds();
-      return minutes.substr(-2) + ':' + seconds.substr(-2);
-    }
-    else {
-      var minutes = "00";
-      var seconds = "00";
-      return minutes + ':' + seconds;
-    }
+    return this.apiService.toHHMMSS(unix_timestamp);
   }
 
   ngOnInit() {
-    this.title = 'Название плейлиста или альбома';
+
+    if (this.apiService.getFavoritesData()[0].done) {
+      // this.title = this.playlists.filter(x => x.id == this.page)[0]['title'];
+      this.playlists = this.apiService.getFavoritesData()[0].playlists;
+
+      this.playlists.forEach((item) => {
+        this.radioPlaylists.push({name: item['id'], type: 'radio', label: item['title'],value: item['id']});
+      });
+    }
 
     this.showButtons = interval(300).subscribe(x => {
       let maxCount = this.trackList.indexOf(this.trackList.filter(o => o.id == this.trackData['data'][0].id)[0]);
 
-      if (maxCount+1 == this.trackList.length) {
+      if (maxCount + 1 == this.trackList.length) {
         this.showNext = false;
       }
       else {
@@ -109,10 +110,94 @@ export class PlayerComponent implements OnInit, OnDestroy {
         this.showBack = true;
       }
     });
+    console.log(this.trackList);
 
 
   }
 
+
+  async presentActionSheet(item) {
+    event.stopPropagation();
+
+    const actionSheet = await this.actionSheetController.create({
+      buttons: [{
+        text: 'В избранное',
+        icon: 'heart',
+        handler: () => {
+          this.addToFavorite(item);
+        }
+      },
+      {
+        text: 'Добавить в плейлист',
+        icon: 'list',
+        handler: () => {
+          this.selectAlert();
+        }
+      },
+      {
+        text: 'Поделиться',
+        icon: 'share',
+        handler: () => {
+
+        }
+      }, {
+        text: 'Отмена',
+        role: 'cancel',
+        handler: () => {
+
+        }
+      }]
+    });
+    await actionSheet.present();
+
+  }
+
+  async selectAlert() {
+    const alert = await this.alertController.create({
+      header: 'Выберите плейлист',
+      message: 'Выберите плейлист для добавления трека',
+      inputs: this.radioPlaylists,
+      buttons: [
+        {
+          text: 'Отмена',
+          role: 'cancel',
+          cssClass: 'secondary',
+          handler: () => {
+
+          }
+        }, {
+          text: 'Добавить',
+          handler: (id) => {
+            this.pushToPlaylist(id);
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+
+
+  //Добавление трека в избранные
+  addToFavorite(item){
+    if (this.apiService.getFavoritesData()[0].myTracks.filter(o => o.id == item.id).length == 0) {
+      this.apiService.getFavoritesData()[0].myTracks.push(item);
+      this.storage.set('favoritesData', this.apiService.getFavoritesData());
+    }
+  }
+
+  //Добавление трека в плейлист
+  pushToPlaylist(id) {
+    if(!this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0]['files_detail']) {
+      this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0]['files_detail'] = [];
+    }
+    if(this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0]['files_detail'].filter(o => o.id == this.trackData['data'][0].id).length==0) {
+      this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0]['files_detail'].push(this.trackData['data'][0]);
+    }
+
+    this.apiService.editPlatlist(id, this.apiService.getFavoritesData()[0].playlists.filter(x => x.id == id)[0])
+  }
 
   play() {
     this.events.publish('play');
@@ -153,7 +238,7 @@ export class PlayerComponent implements OnInit, OnDestroy {
   back() {
     this.changeRepeat(false);
     let index: number = this.trackList.indexOf(this.trackList.filter(o => o.id == this.trackData['data'][0].id)[0]);
-    let id = index-1;
+    let id = index - 1;
 
     if (index !== -1 && this.trackList[id]) {
       this.events.publish('back', id, this.trackList);
@@ -178,13 +263,13 @@ export class PlayerComponent implements OnInit, OnDestroy {
     }
   }
 
-  shuffle(){
+  shuffle() {
     let array = this.trackList;
-      for (let i = array.length - 1; i > 0; i--) {
-          const rand = Math.floor(Math.random() * (i + 1));
-          [array[i], array[rand]] = [array[rand], array[i]]
-      }
-      this.events.publish('shuffle', array);
+    for (let i = array.length - 1; i > 0; i--) {
+      const rand = Math.floor(Math.random() * (i + 1));
+      [array[i], array[rand]] = [array[rand], array[i]]
+    }
+    this.events.publish('shuffle', array);
   }
 
 

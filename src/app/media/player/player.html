@@ -9,11 +9,13 @@
   </h5>
 
   <div class="title-img">
+        <!-- <img *ngIf="trackData['data'][0].img" [src]="trackData['data'][0].img" [alt]="item.title" style="width: 100%">
+        <img *ngIf="!trackData['data'][0].img" src="assets/nope.png" alt="" style="width: 100%"> -->
     <img src="assets/Rectangle 4.png" style="width: 100%" />
   </div>
 
   <div class="track">
-    <small class="text-muted">{{ trackData['data'][0].author }}</small>
+    <small class="text-muted">{{ trackData['data'][0].artist }}</small>
     <h2 class="mt-0">{{ trackData['data'][0].title }}</h2>
   </div>
 
